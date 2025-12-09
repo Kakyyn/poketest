@@ -566,16 +566,25 @@
       if (!gameData.zoneWheels[zoneKey]) {
         // Use zone-specific Pokemon if available, otherwise use default
         const zonePokemon = zoneSpecificPokemon[gameData.currentZone];
-        gameData.zoneWheels[zoneKey] = zonePokemon ? [...zonePokemon] : [...defaultWheelPrizes];
+        if (zonePokemon) {
+          // Clean Pokemon list for wheel display - remove weights
+          const cleanPrizes = zonePokemon.map(pokemon => ({
+            name: pokemon.name,
+            type: pokemon.type
+          }));
+          gameData.zoneWheels[zoneKey] = cleanPrizes;
+        } else {
+          gameData.zoneWheels[zoneKey] = [...defaultWheelPrizes];
+        }
       }
       
       // Clean old Pokemon data format if needed
       const currentPrizes = gameData.zoneWheels[zoneKey];
       let needsMigration = false;
       const migratedPrizes = currentPrizes.map(prize => {
-        if (prize.icon || prize.value !== undefined || prize.cp !== undefined) {
+        if (prize.icon || prize.value !== undefined || prize.cp !== undefined || prize.weight !== undefined) {
           needsMigration = true;
-          // Convert to clean format
+          // Convert to clean format - no weights
           const newPrize = {
             name: prize.name,
             type: prize.type
@@ -1692,15 +1701,22 @@
       playSpinSound();
       
       setTimeout(() => {
-        // Use weighted selection instead of pure physics
+        // Always use physics-based selection - what you see is what you get
         const currentPrizes = getCurrentWheelPrizes();
-        const { prize: selectedPrize, index: prizeIndex } = selectWeightedPrize(currentPrizes);
-        
-        // Still calculate physical wheel position for visual consistency
         const sliceAngle = 360 / currentPrizes.length;
+        
+        // Calculate the actual final rotation angle (after all the rotations)
         const actualFinalAngle = finalRotation % 360;
         
-        // Award the weighted-selected prize
+        // The pointer points upward, so we need to see which slice is at the top
+        // Account for the -90 degree offset used in slice drawing (slices start from 12 o'clock)
+        let pointerAngle = (360 - actualFinalAngle) % 360;
+        
+        // Calculate which slice the pointer is pointing to
+        const sliceIndex = Math.floor(pointerAngle / sliceAngle) % currentPrizes.length;
+        const selectedPrize = currentPrizes[sliceIndex];
+        
+        // Award the prize that the wheel actually landed on
         awardPrize(selectedPrize);
         showPrizeModal(selectedPrize);
         
