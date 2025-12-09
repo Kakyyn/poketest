@@ -400,6 +400,17 @@
         { name: 'Sandshrew', type: 'pokemon', weight: 15 },
         { name: 'Tauros', type: 'pokemon', weight: 8 }
       ],
+      'Huevo Pokemon': [
+        { name: 'Flareon', type: 'pokemon' },
+        { name: 'Vaporeon', type: 'pokemon' },
+        { name: 'Mr. Mime', type: 'pokemon' },
+        { name: 'Venusaur', type: 'pokemon' },
+        { name: 'Mew', type: 'pokemon' },
+        { name: 'Jolteon', type: 'pokemon' },
+        { name: 'Blastoise', type: 'pokemon' },
+        { name: 'Charizard', type: 'pokemon' },
+        { name: 'Ditto', type: 'pokemon' }
+      ],
       // Water Routes
       'Surf Routes': [
         { name: 'Tentacool', type: 'pokemon' },
@@ -1868,9 +1879,8 @@
     }
 
     function getMapCategories() {
-      // Check if we have custom maps stored, otherwise use defaults
-      if (!gameData.customMaps) {
-        gameData.customMaps = [
+      // Force update to include new zones
+      gameData.customMaps = [
         {
           name: 'Kanto',
           icon: '🗾',
@@ -1894,13 +1904,13 @@
             { map: 'Kanto', name: 'Route 9', icon: '⛰️', description: 'Sendero montañoso hacia Rock Tunnel' },
             { map: 'Kanto', name: 'Rock Tunnel', icon: '🕳️', description: 'Túnel oscuro lleno de Pokemon tipo Roca' },
             { map: 'Kanto', name: 'Power Plant', icon: '⚡', description: 'Planta eléctrica con Pokemon tipo Eléctrico' },
+            { map: 'Kanto', name: 'Huevo Pokemon', icon: '🥚', description: 'Pokemon especiales que salen de huevos misteriosos' },
             { map: 'Kanto', name: 'Todo', icon: '🌟', description: 'Todos los 151 Pokemon de Kanto' },
             { map: 'Kanto', name: 'Solo Rattata', icon: '🐭', description: 'Solo Rattata en todas partes' }
           ]
         }
-        ];
-        saveData();
-      }
+      ];
+      saveData();
       return gameData.customMaps;
     }
 
