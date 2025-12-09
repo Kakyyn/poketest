@@ -1,0 +1,2643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explorador Pokemon</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="mobile-app">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="profile-avatar">⚙️</div>
+    </div>
+    <h1 class="app-title">Explorador Pokemon</h1>
+    <div class="header-right">
+      <!-- Coins removed -->
+    </div>
+  </header>
+
+  <!-- Settings Menu (hidden by default) -->
+  <div id="settingsMenu" class="settings-menu hidden">
+    <div class="settings-content">
+      <h3>Configuración</h3>
+      <button id="resetWheelsBtn" class="settings-btn">Resetear Ruedas a Predeterminadas</button>
+      <button id="closeSettings" class="settings-btn">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main id="main" class="main-content"></main>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="showMaps()">
+      <span class="nav-icon">🗺️</span>
+      <span class="nav-label">Mapas</span>
+    </button>
+    <button class="nav-item" onclick="showBattle()">
+      <span class="nav-icon">⚔️</span>
+      <span class="nav-label">Batalla</span>
+    </button>
+    <button class="nav-item wheel-button active" onclick="showWheel()">
+      <span class="nav-icon">🎰</span>
+      <span class="nav-label">Encuentros</span>
+    </button>
+    <button class="nav-item" onclick="showItems()">
+      <span class="nav-icon">🎒</span>
+      <span class="nav-label">Objetos</span>
+    </button>
+    <button class="nav-item" onclick="showEvents()">
+      <span class="nav-icon">🎲</span>
+      <span class="nav-label">Eventos</span>
+    </button>
+  </nav>
+
+  <script>
+    // Global state
+    let gameData = {
+      totalSpins: 0,
+      prizes: [],
+      items: [],
+      currentMap: 'Kanto',
+      currentZone: 'Route 1',
+      zoneWheels: {}
+    };
+
+    const main = document.getElementById('main');
+    let isSpinning = false;
+
+    // Zone-specific Pokemon configurations
+    const zoneSpecificPokemon = {
+      // Grass Routes - Common Pokemon
+      'Route 1': [
+        { name: 'Rattata', type: 'pokemon' },
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Caterpie', type: 'pokemon' },
+        { name: 'Weedle', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Poliwag', type: 'pokemon' }
+      ],
+      'Route 2': [
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Caterpie', type: 'pokemon' },
+        { name: 'Weedle', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Bellsprout', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' },
+        { name: 'Zubat', type: 'pokemon' },
+        { name: 'Bulbasaur', type: 'pokemon' }
+      ],
+      'Route 3': [
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Geodude', type: 'pokemon' },
+        { name: 'Mankey', type: 'pokemon' },
+        { name: 'Jigglypuff', type: 'pokemon' },
+        { name: 'Ekans', type: 'pokemon' },
+        { name: 'Sandshrew', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' }
+      ],
+      'Route 4': [
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Ekans', type: 'pokemon' },
+        { name: 'Sandshrew', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' },
+        { name: 'Mankey', type: 'pokemon' },
+        { name: 'Jigglypuff', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' }
+      ],
+      'Route 5': [
+        { name: 'Oddish', type: 'pokemon', weight: 15 },
+        { name: 'Bellsprout', type: 'pokemon', weight: 15 },
+        { name: 'Pidgey', type: 'pokemon', weight: 15 },
+        { name: 'Rattata', type: 'pokemon', weight: 15 },
+        { name: 'Mankey', type: 'pokemon', weight: 12 },
+        { name: 'Meowth', type: 'pokemon', weight: 12 },
+        { name: 'Abra', type: 'pokemon', weight: 10 },
+        { name: 'Jigglypuff', type: 'pokemon', weight: 10 },
+        { name: 'Pidgeotto', type: 'pokemon', weight: 8 },
+        { name: 'Nidoran', type: 'pokemon', weight: 12 },
+        { name: 'Machoke', type: 'pokemon', weight: 7 }
+      ],
+      'Route 6': [
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' },
+        { name: 'Caterpie', type: 'pokemon' },
+        { name: 'Weedle', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Bellsprout', type: 'pokemon' },
+        { name: 'Jigglypuff', type: 'pokemon' }
+      ],
+      'Route 7': [
+        { name: 'Pidgey', type: 'pokemon', weight: 15 },
+        { name: 'Pidgeotto', type: 'pokemon', weight: 10 },
+        { name: 'Rattata', type: 'pokemon', weight: 15 },
+        { name: 'Jigglypuff', type: 'pokemon', weight: 10 },
+        { name: 'Oddish', type: 'pokemon', weight: 15 },
+        { name: 'Bellsprout', type: 'pokemon', weight: 15 },
+        { name: 'Mankey', type: 'pokemon', weight: 12 },
+        { name: 'Meowth', type: 'pokemon', weight: 12 },
+        { name: 'Growlithe', type: 'pokemon', weight: 8 },
+        { name: 'Vulpix', type: 'pokemon', weight: 8 },
+        { name: 'Abra', type: 'pokemon', weight: 10 }
+      ],
+      'Route 8': [
+        { name: 'Pidgey', type: 'pokemon', weight: 15 },
+        { name: 'Pidgeotto', type: 'pokemon', weight: 10 },
+        { name: 'Rattata', type: 'pokemon', weight: 15 },
+        { name: 'Raticate', type: 'pokemon', weight: 10 },
+        { name: 'Spearow', type: 'pokemon', weight: 15 },
+        { name: 'Fearow', type: 'pokemon', weight: 8 },
+        { name: 'Meowth', type: 'pokemon', weight: 12 },
+        { name: 'Persian', type: 'pokemon', weight: 8 },
+        { name: 'Kadabra', type: 'pokemon', weight: 7 },
+        { name: 'Machoke', type: 'pokemon', weight: 7 }
+      ],
+      'Route 9': [
+        { name: 'Rattata', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Ekans', type: 'pokemon' },
+        { name: 'Arbok', type: 'pokemon' },
+        { name: 'Sandshrew', type: 'pokemon' },
+        { name: 'Sandslash', type: 'pokemon' },
+        { name: 'Mankey', type: 'pokemon' },
+        { name: 'Primeape', type: 'pokemon' },
+        { name: 'Machop', type: 'pokemon' },
+        { name: 'Machoke', type: 'pokemon' }
+      ],
+      'Route 10': [
+        { name: 'Pikachu', type: 'pokemon' },
+        { name: 'Voltorb', type: 'pokemon' },
+        { name: 'Magnemite', type: 'pokemon' },
+        { name: 'Electabuzz', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Ekans', type: 'pokemon' },
+        { name: 'Sandshrew', type: 'pokemon' },
+        { name: 'Mankey', type: 'pokemon' }
+      ],
+      'Route 19': [
+        { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Tentacruel', type: 'pokemon' },
+        { name: 'Magikarp', type: 'pokemon' },
+        { name: 'Gyarados', type: 'pokemon' },
+        { name: 'Staryu', type: 'pokemon' },
+        { name: 'Starmie', type: 'pokemon' },
+        { name: 'Psyduck', type: 'pokemon' },
+        { name: 'Golduck', type: 'pokemon' },
+        { name: 'Seel', type: 'pokemon' },
+        { name: 'Dewgong', type: 'pokemon' }
+      ],
+      'Route 20': [
+        { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Tentacruel', type: 'pokemon' },
+        { name: 'Magikarp', type: 'pokemon' },
+        { name: 'Gyarados', type: 'pokemon' },
+        { name: 'Staryu', type: 'pokemon' },
+        { name: 'Starmie', type: 'pokemon' },
+        { name: 'Horsea', type: 'pokemon' },
+        { name: 'Seadra', type: 'pokemon' },
+        { name: 'Goldeen', type: 'pokemon' },
+        { name: 'Seaking', type: 'pokemon' }
+      ],
+      'Route 21': [
+        { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Tentacruel', type: 'pokemon' },
+        { name: 'Magikarp', type: 'pokemon' },
+        { name: 'Gyarados', type: 'pokemon' },
+        { name: 'Staryu', type: 'pokemon' },
+        { name: 'Starmie', type: 'pokemon' },
+        { name: 'Krabby', type: 'pokemon' },
+        { name: 'Kingler', type: 'pokemon' },
+        { name: 'Tangela', type: 'pokemon' },
+        { name: 'Kangaskhan', type: 'pokemon' }
+      ],
+      'Route 11': [
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Ekans', type: 'pokemon' },
+        { name: 'Sandshrew', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Bellsprout', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' },
+        { name: 'Drowzee', type: 'pokemon' },
+        { name: 'Mankey', type: 'pokemon' }
+      ],
+      'Route 12': [
+        { name: 'Magikarp', type: 'pokemon' },
+        { name: 'Goldeen', type: 'pokemon' },
+        { name: 'Psyduck', type: 'pokemon' },
+        { name: 'Slowpoke', type: 'pokemon' },
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Poliwag', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' }
+      ],
+      'Route 13': [
+        { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Horsea', type: 'pokemon' },
+        { name: 'Staryu', type: 'pokemon' },
+        { name: 'Shellder', type: 'pokemon' },
+        { name: 'Krabby', type: 'pokemon' },
+        { name: 'Goldeen', type: 'pokemon' },
+        { name: 'Psyduck', type: 'pokemon' },
+        { name: 'Poliwag', type: 'pokemon' }
+      ],
+      'Route 14': [
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Pidgeotto', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Gloom', type: 'pokemon' },
+        { name: 'Bellsprout', type: 'pokemon' },
+        { name: 'Weepinbell', type: 'pokemon' },
+        { name: 'Venonat', type: 'pokemon' },
+        { name: 'Venomoth', type: 'pokemon' },
+        { name: 'Nidoran♂', type: 'pokemon' },
+        { name: 'Nidorino', type: 'pokemon' }
+      ],
+      'Route 16': [
+        { name: 'Rattata', type: 'pokemon' },
+        { name: 'Raticate', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' },
+        { name: 'Fearow', type: 'pokemon' },
+        { name: 'Doduo', type: 'pokemon' },
+        { name: 'Dodrio', type: 'pokemon' },
+        { name: 'Snorlax', type: 'pokemon' },
+        { name: 'Slowpoke', type: 'pokemon' },
+        { name: 'Slowbro', type: 'pokemon' },
+        { name: 'Murkrow', type: 'pokemon' }
+      ],
+      'Route 24': [
+        { name: 'Psyduck', type: 'pokemon' },
+        { name: 'Slowpoke', type: 'pokemon' },
+        { name: 'Poliwag', type: 'pokemon' },
+        { name: 'Magikarp', type: 'pokemon' },
+        { name: 'Goldeen', type: 'pokemon' },
+        { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Bellsprout', type: 'pokemon' }
+      ],
+      'Route 25': [
+        { name: 'Oddish', type: 'pokemon' },
+        { name: 'Bellsprout', type: 'pokemon' },
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Caterpie', type: 'pokemon' },
+        { name: 'Weedle', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' },
+        { name: 'Jigglypuff', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' }
+      ],
+      // Forest Areas - Bug and Flying types
+      'Viridian Forest': [
+        { name: 'Caterpie', type: 'pokemon' },
+        { name: 'Weedle', type: 'pokemon' },
+        { name: 'Butterfree', type: 'pokemon' },
+        { name: 'Beedrill', type: 'pokemon' },
+        { name: 'Pidgey', type: 'pokemon' },
+        { name: 'Pidgeotto', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' }
+      ],
+      // Cave Areas - Rock, Ground, and rare Pokemon
+      'Mt. Moon': [
+        { name: 'Geodude', type: 'pokemon' },
+        { name: 'Graveler', type: 'pokemon' },
+        { name: 'Zubat', type: 'pokemon' },
+        { name: 'Golbat', type: 'pokemon' },
+        { name: 'Clefairy', type: 'pokemon' },
+        { name: 'Clefable', type: 'pokemon' },
+        { name: 'Onix', type: 'pokemon' },
+        { name: 'Spearow', type: 'pokemon' }
+      ],
+      'Rock Tunnel': [
+        { name: 'Geodude', type: 'pokemon' },
+        { name: 'Graveler', type: 'pokemon' },
+        { name: 'Zubat', type: 'pokemon' },
+        { name: 'Golbat', type: 'pokemon' },
+        { name: 'Onix', type: 'pokemon' },
+        { name: 'Mankey', type: 'pokemon' },
+        { name: 'Primeape', type: 'pokemon' },
+        { name: 'Machop', type: 'pokemon' }
+      ],
+      'Seafoam Islands': [
+        { name: 'Psyduck', type: 'pokemon' },
+        { name: 'Golduck', type: 'pokemon' },
+        { name: 'Seel', type: 'pokemon' },
+        { name: 'Dewgong', type: 'pokemon' },
+        { name: 'Slowpoke', type: 'pokemon' },
+        { name: 'Zubat', type: 'pokemon' },
+        { name: 'Geodude', type: 'pokemon' },
+        { name: 'Articuno', type: 'pokemon' }
+      ],
+      'Cerulean Cave': [
+        { name: 'Graveler', type: 'pokemon', weight: 15 },
+        { name: 'Golem', type: 'pokemon', weight: 12 },
+        { name: 'Golbat', type: 'pokemon', weight: 15 },
+        { name: 'Golduck', type: 'pokemon', weight: 12 },
+        { name: 'Arcanine', type: 'pokemon', weight: 8 },
+        { name: 'Ditto', type: 'pokemon', weight: 10 },
+        { name: 'Mewtwo', type: 'pokemon', weight: 2 },
+        { name: 'Rhydon', type: 'pokemon', weight: 10 }
+      ],
+      // Ghost Area
+      'Pokemon Tower': [
+        { name: 'Gastly', type: 'pokemon' },
+        { name: 'Haunter', type: 'pokemon' },
+        { name: 'Gengar', type: 'pokemon' },
+        { name: 'Zubat', type: 'pokemon' },
+        { name: 'Golbat', type: 'pokemon' },
+        { name: 'Cubone', type: 'pokemon' },
+        { name: 'Marowak', type: 'pokemon' },
+        { name: 'Drowzee', type: 'pokemon' }
+      ],
+      // Electric Areas
+      'Power Plant': [
+        { name: 'Pikachu', type: 'pokemon', weight: 20 },
+        { name: 'Raichu', type: 'pokemon', weight: 12 },
+        { name: 'Magnemite', type: 'pokemon', weight: 20 },
+        { name: 'Magneton', type: 'pokemon', weight: 12 },
+        { name: 'Voltorb', type: 'pokemon', weight: 20 },
+        { name: 'Electrode', type: 'pokemon', weight: 12 },
+        { name: 'Electabuzz', type: 'pokemon', weight: 8 },
+        { name: 'Zapdos', type: 'pokemon', weight: 3 }
+      ],
+      // Fire/Poison Area
+      'Pokemon Mansion': [
+        { name: 'Growlithe', type: 'pokemon' },
+        { name: 'Arcanine', type: 'pokemon' },
+        { name: 'Ponyta', type: 'pokemon' },
+        { name: 'Rapidash', type: 'pokemon' },
+        { name: 'Grimer', type: 'pokemon' },
+        { name: 'Muk', type: 'pokemon' },
+        { name: 'Koffing', type: 'pokemon' },
+        { name: 'Weezing', type: 'pokemon' }
+      ],
+      // Volcanic Area
+      'Cinnabar Island': [
+        { name: 'Ponyta', type: 'pokemon' },
+        { name: 'Rapidash', type: 'pokemon' },
+        { name: 'Magmar', type: 'pokemon' },
+        { name: 'Magcargo', type: 'pokemon' },
+        { name: 'Growlithe', type: 'pokemon' },
+        { name: 'Arcanine', type: 'pokemon' },
+        { name: 'Moltres', type: 'pokemon' },
+        { name: 'Zubat', type: 'pokemon' }
+      ],
+      // Safari Zone - Rare Pokemon
+      'Safari Zone': [
+        { name: 'Rhyhorn', type: 'pokemon', weight: 10 },
+        { name: 'Rhydon', type: 'pokemon', weight: 8 },
+        { name: 'Nidoran♂', type: 'pokemon', weight: 18 },
+        { name: 'Nidoran♀', type: 'pokemon', weight: 18 },
+        { name: 'Kangaskhan', type: 'pokemon', weight: 7 },
+        { name: 'Exeggcute', type: 'pokemon', weight: 12 },
+        { name: 'Sandshrew', type: 'pokemon', weight: 15 },
+        { name: 'Tauros', type: 'pokemon', weight: 8 }
+      ],
+      // Water Routes
+      'Surf Routes': [
+        { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Tentacruel', type: 'pokemon' },
+        { name: 'Staryu', type: 'pokemon' },
+        { name: 'Starmie', type: 'pokemon' },
+        { name: 'Horsea', type: 'pokemon' },
+        { name: 'Seadra', type: 'pokemon' },
+        { name: 'Gyarados', type: 'pokemon' },
+        { name: 'Lapras', type: 'pokemon' }
+      ],
+      // Final Challenge
+      'Victory Road': [
+        { name: 'Graveler', type: 'pokemon' },
+        { name: 'Golem', type: 'pokemon' },
+        { name: 'Onix', type: 'pokemon' },
+        { name: 'Golbat', type: 'pokemon' },
+        { name: 'Machop', type: 'pokemon' },
+        { name: 'Machoke', type: 'pokemon' },
+        { name: 'Arcanine', type: 'pokemon' },
+        { name: 'Dragonite', type: 'pokemon' }
+      ],
+      // Colección Completa - Todos los 151 Pokemon Originales
+      'Todo': [
+        { name: 'Bulbasaur', type: 'pokemon' }, { name: 'Ivysaur', type: 'pokemon' }, { name: 'Venusaur', type: 'pokemon' },
+        { name: 'Charmander', type: 'pokemon' }, { name: 'Charmeleon', type: 'pokemon' }, { name: 'Charizard', type: 'pokemon' },
+        { name: 'Squirtle', type: 'pokemon' }, { name: 'Wartortle', type: 'pokemon' }, { name: 'Blastoise', type: 'pokemon' },
+        { name: 'Caterpie', type: 'pokemon' }, { name: 'Metapod', type: 'pokemon' }, { name: 'Butterfree', type: 'pokemon' },
+        { name: 'Weedle', type: 'pokemon' }, { name: 'Kakuna', type: 'pokemon' }, { name: 'Beedrill', type: 'pokemon' },
+        { name: 'Pidgey', type: 'pokemon' }, { name: 'Pidgeotto', type: 'pokemon' }, { name: 'Pidgeot', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' }, { name: 'Raticate', type: 'pokemon' }, { name: 'Spearow', type: 'pokemon' },
+        { name: 'Fearow', type: 'pokemon' }, { name: 'Ekans', type: 'pokemon' }, { name: 'Arbok', type: 'pokemon' },
+        { name: 'Pikachu', type: 'pokemon' }, { name: 'Raichu', type: 'pokemon' }, { name: 'Sandshrew', type: 'pokemon' },
+        { name: 'Sandslash', type: 'pokemon' }, { name: 'Nidoran♀', type: 'pokemon' }, { name: 'Nidorina', type: 'pokemon' },
+        { name: 'Nidoqueen', type: 'pokemon' }, { name: 'Nidoran♂', type: 'pokemon' }, { name: 'Nidorino', type: 'pokemon' },
+        { name: 'Nidoking', type: 'pokemon' }, { name: 'Clefairy', type: 'pokemon' }, { name: 'Clefable', type: 'pokemon' },
+        { name: 'Vulpix', type: 'pokemon' }, { name: 'Ninetales', type: 'pokemon' }, { name: 'Jigglypuff', type: 'pokemon' },
+        { name: 'Wigglytuff', type: 'pokemon' }, { name: 'Zubat', type: 'pokemon' }, { name: 'Golbat', type: 'pokemon' },
+        { name: 'Oddish', type: 'pokemon' }, { name: 'Gloom', type: 'pokemon' }, { name: 'Vileplume', type: 'pokemon' },
+        { name: 'Paras', type: 'pokemon' }, { name: 'Parasect', type: 'pokemon' }, { name: 'Venonat', type: 'pokemon' },
+        { name: 'Venomoth', type: 'pokemon' }, { name: 'Diglett', type: 'pokemon' }, { name: 'Dugtrio', type: 'pokemon' },
+        { name: 'Meowth', type: 'pokemon' }, { name: 'Persian', type: 'pokemon' }, { name: 'Psyduck', type: 'pokemon' },
+        { name: 'Golduck', type: 'pokemon' }, { name: 'Mankey', type: 'pokemon' }, { name: 'Primeape', type: 'pokemon' },
+        { name: 'Growlithe', type: 'pokemon' }, { name: 'Arcanine', type: 'pokemon' }, { name: 'Poliwag', type: 'pokemon' },
+        { name: 'Poliwhirl', type: 'pokemon' }, { name: 'Poliwrath', type: 'pokemon' }, { name: 'Abra', type: 'pokemon' },
+        { name: 'Kadabra', type: 'pokemon' }, { name: 'Alakazam', type: 'pokemon' }, { name: 'Machop', type: 'pokemon' },
+        { name: 'Machoke', type: 'pokemon' }, { name: 'Machamp', type: 'pokemon' }, { name: 'Bellsprout', type: 'pokemon' },
+        { name: 'Weepinbell', type: 'pokemon' }, { name: 'Victreebel', type: 'pokemon' }, { name: 'Tentacool', type: 'pokemon' },
+        { name: 'Tentacruel', type: 'pokemon' }, { name: 'Geodude', type: 'pokemon' }, { name: 'Graveler', type: 'pokemon' },
+        { name: 'Golem', type: 'pokemon' }, { name: 'Ponyta', type: 'pokemon' }, { name: 'Rapidash', type: 'pokemon' },
+        { name: 'Slowpoke', type: 'pokemon' }, { name: 'Slowbro', type: 'pokemon' }, { name: 'Magnemite', type: 'pokemon' },
+        { name: 'Magneton', type: 'pokemon' }, { name: 'Farfetch\'d', type: 'pokemon' }, { name: 'Doduo', type: 'pokemon' },
+        { name: 'Dodrio', type: 'pokemon' }, { name: 'Seel', type: 'pokemon' }, { name: 'Dewgong', type: 'pokemon' },
+        { name: 'Grimer', type: 'pokemon' }, { name: 'Muk', type: 'pokemon' }, { name: 'Shellder', type: 'pokemon' },
+        { name: 'Cloyster', type: 'pokemon' }, { name: 'Gastly', type: 'pokemon' }, { name: 'Haunter', type: 'pokemon' },
+        { name: 'Gengar', type: 'pokemon' }, { name: 'Onix', type: 'pokemon' }, { name: 'Drowzee', type: 'pokemon' },
+        { name: 'Hypno', type: 'pokemon' }, { name: 'Krabby', type: 'pokemon' }, { name: 'Kingler', type: 'pokemon' },
+        { name: 'Voltorb', type: 'pokemon' }, { name: 'Electrode', type: 'pokemon' }, { name: 'Exeggcute', type: 'pokemon' },
+        { name: 'Exeggutor', type: 'pokemon' }, { name: 'Cubone', type: 'pokemon' }, { name: 'Marowak', type: 'pokemon' },
+        { name: 'Hitmonlee', type: 'pokemon' }, { name: 'Hitmonchan', type: 'pokemon' }, { name: 'Lickitung', type: 'pokemon' },
+        { name: 'Koffing', type: 'pokemon' }, { name: 'Weezing', type: 'pokemon' }, { name: 'Rhyhorn', type: 'pokemon' },
+        { name: 'Rhydon', type: 'pokemon' }, { name: 'Chansey', type: 'pokemon' }, { name: 'Tangela', type: 'pokemon' },
+        { name: 'Kangaskhan', type: 'pokemon' }, { name: 'Horsea', type: 'pokemon' }, { name: 'Seadra', type: 'pokemon' },
+        { name: 'Goldeen', type: 'pokemon' }, { name: 'Seaking', type: 'pokemon' }, { name: 'Staryu', type: 'pokemon' },
+        { name: 'Starmie', type: 'pokemon' }, { name: 'Mr. Mime', type: 'pokemon' }, { name: 'Scyther', type: 'pokemon' },
+        { name: 'Jynx', type: 'pokemon' }, { name: 'Electabuzz', type: 'pokemon' }, { name: 'Magmar', type: 'pokemon' },
+        { name: 'Pinsir', type: 'pokemon' }, { name: 'Tauros', type: 'pokemon' }, { name: 'Magikarp', type: 'pokemon' },
+        { name: 'Gyarados', type: 'pokemon' }, { name: 'Lapras', type: 'pokemon' }, { name: 'Ditto', type: 'pokemon' },
+        { name: 'Eevee', type: 'pokemon' }, { name: 'Vaporeon', type: 'pokemon' }, { name: 'Jolteon', type: 'pokemon' },
+        { name: 'Flareon', type: 'pokemon' }, { name: 'Porygon', type: 'pokemon' }, { name: 'Omanyte', type: 'pokemon' },
+        { name: 'Omastar', type: 'pokemon' }, { name: 'Kabuto', type: 'pokemon' }, { name: 'Kabutops', type: 'pokemon' },
+        { name: 'Aerodactyl', type: 'pokemon' }, { name: 'Snorlax', type: 'pokemon' }, { name: 'Articuno', type: 'pokemon' },
+        { name: 'Zapdos', type: 'pokemon' }, { name: 'Moltres', type: 'pokemon' }, { name: 'Dratini', type: 'pokemon' },
+        { name: 'Dragonair', type: 'pokemon' }, { name: 'Dragonite', type: 'pokemon' }, { name: 'Mewtwo', type: 'pokemon' },
+        { name: 'Mew', type: 'pokemon' }
+      ],
+      // Rueda Meme - Solo Rattata
+      'Solo Rattata': [
+        { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' },
+        { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' }, { name: 'Rattata', type: 'pokemon' }
+      ]
+    };
+
+    // Clean all zone Pokemon data to remove CP properties
+    function cleanZonePokemonData() {
+      Object.keys(zoneSpecificPokemon).forEach(zoneName => {
+        zoneSpecificPokemon[zoneName] = zoneSpecificPokemon[zoneName].map(pokemon => ({
+          name: pokemon.name,
+          type: pokemon.type
+        }));
+      });
+    }
+
+    // Clean the data on load
+    cleanZonePokemonData();
+
+
+
+    // Default fallback Pokemon for zones not defined above
+    const defaultWheelPrizes = [
+      { name: 'Pikachu', type: 'pokemon' },
+      { name: 'Charizard', type: 'pokemon' },
+      { name: 'Blastoise', type: 'pokemon' },
+      { name: 'Venusaur', type: 'pokemon' },
+      { name: 'Umbreon', type: 'pokemon' },
+      { name: 'Espeon', type: 'pokemon' },
+      { name: 'Articuno', type: 'pokemon' },
+      { name: 'Mew', type: 'pokemon' }
+    ];
+
+    // Load data from localStorage
+    function loadData() {
+      const stored = localStorage.getItem('fortuneWheelData');
+      if (stored) {
+        gameData = { ...gameData, ...JSON.parse(stored) };
+        
+        // Clean old caught Pokemon data
+        if (gameData.prizes && gameData.prizes.length > 0) {
+          let needsMigration = false;
+          gameData.prizes = gameData.prizes.map(prize => {
+            if (prize.icon || prize.value !== undefined || prize.cp !== undefined) {
+              needsMigration = true;
+              const migratedPrize = {
+                name: prize.name,
+                type: prize.type,
+                timestamp: prize.timestamp,
+                wonFromMap: prize.wonFromMap,
+                wonFromZone: prize.wonFromZone
+              };
+              return migratedPrize;
+            }
+            return prize;
+          });
+          
+          if (needsMigration) {
+            saveData(); // Save the migrated data
+          }
+        }
+      }
+      updateUI();
+    }
+
+    // Save data to localStorage
+    function saveData() {
+      localStorage.setItem('fortuneWheelData', JSON.stringify(gameData));
+    }
+
+    // Update UI elements
+    function updateUI() {
+      // No coins to update anymore - spins are always free
+    }
+
+    // Get current wheel prizes for the selected zone
+    function getCurrentWheelPrizes() {
+      const zoneKey = `${gameData.currentMap}|${gameData.currentZone}`;
+      
+      // Manejo especial para la rueda Todo - mostrar todos los 151 Pokemon
+      if (gameData.currentZone === 'Todo') {
+        return zoneSpecificPokemon['Todo'];
+      }
+      
+      if (!gameData.zoneWheels[zoneKey]) {
+        // Use zone-specific Pokemon if available, otherwise use default
+        const zonePokemon = zoneSpecificPokemon[gameData.currentZone];
+        gameData.zoneWheels[zoneKey] = zonePokemon ? [...zonePokemon] : [...defaultWheelPrizes];
+      }
+      
+      // Clean old Pokemon data format if needed
+      const currentPrizes = gameData.zoneWheels[zoneKey];
+      let needsMigration = false;
+      const migratedPrizes = currentPrizes.map(prize => {
+        if (prize.icon || prize.value !== undefined || prize.cp !== undefined) {
+          needsMigration = true;
+          // Convert to clean format
+          const newPrize = {
+            name: prize.name,
+            type: prize.type
+          };
+          return newPrize;
+        }
+        return prize;
+      });
+      
+      if (needsMigration) {
+        gameData.zoneWheels[zoneKey] = migratedPrizes;
+        saveData(); // Save the migrated data
+      }
+      
+      return gameData.zoneWheels[zoneKey];
+    }
+
+    // Save wheel prizes for current zone
+    function saveCurrentWheelPrizes(prizes) {
+      const zoneKey = `${gameData.currentMap}|${gameData.currentZone}`;
+      gameData.zoneWheels[zoneKey] = prizes;
+      saveData();
+    }
+
+    // Settings menu functionality
+    document.querySelector('.profile-avatar').addEventListener('click', () => {
+      document.getElementById('settingsMenu').classList.remove('hidden');
+    });
+
+    document.getElementById('closeSettings').addEventListener('click', () => {
+      document.getElementById('settingsMenu').classList.add('hidden');
+    });
+
+    // Reset wheels to default
+    document.getElementById('resetWheelsBtn').addEventListener('click', () => {
+      if (confirm('¿Estás seguro de que quieres reiniciar todas las ruedas a Pokemon por defecto? Esto reemplazará todas las configuraciones personalizadas de Pokemon en cada zona y arreglará cualquier problema de CP.')) {
+        resetAllWheelsToDefault();
+        // Clear localStorage to ensure clean state
+        localStorage.removeItem('fortuneWheelData');
+        gameData = {
+          totalSpins: 0,
+          prizes: [],
+          currentMap: 'Kanto',
+          currentZone: 'Cerulean Cave',
+          zoneWheels: {}
+        };
+        saveData();
+        document.getElementById('settingsMenu').classList.add('hidden');
+        alert('¡Todas las ruedas han sido reiniciadas con Pokemon por defecto!');
+        updateUI();
+      }
+    });
+
+    // Navigation functions
+    function showMaps() {
+      updateNavigation('Maps');
+      const maps = getMapCategories();
+      
+      main.innerHTML = `
+        <div class="wheel-container">
+          <h2 class="wheel-title">Seleccionar Zona</h2>
+          <p class="wheel-subtitle">Choose your adventure location</p>
+          
+          <div class="map-management" style="margin: 15px 0; text-align: center;">
+            <button class="map-mgmt-btn add" onclick="showAddMapModal()" title="Agregar nuevo mapa">+ Agregar Mapa</button>
+          </div>
+          
+          <div style="margin-top: 20px; max-height: 60vh; overflow-y: auto;">
+            ${maps.map(map => `
+              <div class="map-category" style="margin-bottom: 25px;">
+                <div class="map-header">
+                  <div class="map-icon">${map.icon}</div>
+                  <div class="map-info">
+                    <h3 class="map-title">${map.name}</h3>
+                    <div class="map-description">${map.description}</div>
+                  </div>
+                  <div class="map-actions">
+                    <button class="map-edit-btn" onclick="showEditMapModal(${maps.indexOf(map)})" title="Editar mapa">✏️</button>
+                    <button class="map-delete-btn" onclick="deleteMap(${maps.indexOf(map)})" title="Eliminar mapa">🗑️</button>
+                    <button class="add-zone-btn" onclick="showAddZoneModal('${map.name}')" title="Agregar nueva zona">+ Zona</button>
+                  </div>
+                </div>
+                
+                <div class="zones-list">
+                  ${map.zones.map((zone, zoneIndex) => `
+                    <div class="zone-item ${zone.map === gameData.currentMap && zone.name === gameData.currentZone ? 'active' : ''}" onclick="selectZone('${zone.map}', '${zone.name}')">
+                      <div class="zone-item-icon">${zone.icon}</div>
+                      <div class="zone-item-info">
+                        <div class="zone-item-name">${zone.name}</div>
+                        <div class="zone-item-desc">${zone.description}</div>
+                      </div>
+                      <div class="zone-actions">
+                        <button class="zone-edit-btn" onclick="event.stopPropagation(); showEditZoneModal('${map.name}', ${zoneIndex})" title="Editar zona">✏️</button>
+                        <button class="zone-delete-btn" onclick="event.stopPropagation(); deleteZone('${map.name}', ${zoneIndex})" title="Eliminar zona">🗑️</button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function showWheel() {
+      updateNavigation('Wheel');
+      renderFortuneWheel();
+    }
+
+    function showBattle() {
+      updateNavigation('Battle');
+      main.innerHTML = `
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; padding: 20px 0;">
+          <h2 style="color: #fbbf24; margin-bottom: 30px; text-align: center;">⚔️ Sistema de Batalla</h2>
+          
+          <!-- Always Visible Battle Wheel -->
+          <div style="position: relative; margin: 20px 0;">
+            <div id="battleWheel" style="width: 300px; height: 300px; border-radius: 50%; cursor: pointer; transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1); background: conic-gradient(#3b82f6 0deg 180deg, #ef4444 180deg 360deg); box-shadow: 0 0 30px rgba(255,215,0,0.3); position: relative; display: flex; align-items: center; justify-content: center;" onclick="spinBattleWheel()">
+              <div style="background: rgba(0,0,0,0.9); color: white; padding: 15px; border-radius: 50%; font-weight: bold; text-align: center; z-index: 10; border: 2px solid #fbbf24;">⚔️<br>¡BATALLA!</div>
+            </div>
+            <div id="battleTriangle" style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(180deg); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 20px solid #fbbf24; z-index: 20; transition: transform 3s cubic-bezier(0.25, 0.1, 0.25, 1);"></div>
+          </div>
+              
+          <!-- Player Inputs Around the Wheel -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; max-width: 600px;">
+            
+            <!-- Player 1 (Left Side - Blue) -->
+            <div style="background: rgba(59, 130, 246, 0.1); padding: 20px; border-radius: 15px; border: 2px solid rgba(59, 130, 246, 0.4);">
+              <h3 style="color: #3b82f6; margin-bottom: 15px; text-align: center; font-size: 18px;">🔵 Entrenador 1</h3>
+              <div style="margin-bottom: 12px;">
+                <input type="text" id="player1Name" placeholder="Nombre del entrenador" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.1); color: white; font-size: 14px;" oninput="updateBattleWheel()">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <input type="text" id="player1Pokemon" placeholder="Nombre del Pokémon" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.1); color: white; font-size: 14px;" oninput="updateBattleWheel()">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <select id="player1Type" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.1); color: white; font-size: 14px;" onchange="updateBattleWheel()">
+                  <option value="" style="background: #1e293b; color: white;">Tipo del Pokémon</option>
+                  <option value="Normal" style="background: #1e293b; color: white;">⚪ Normal</option>
+                  <option value="Fuego" style="background: #1e293b; color: white;">🔥 Fuego</option>
+                  <option value="Agua" style="background: #1e293b; color: white;">💧 Agua</option>
+                  <option value="Planta" style="background: #1e293b; color: white;">🌱 Planta</option>
+                  <option value="Eléctrico" style="background: #1e293b; color: white;">⚡ Eléctrico</option>
+                  <option value="Hielo" style="background: #1e293b; color: white;">🧊 Hielo</option>
+                  <option value="Lucha" style="background: #1e293b; color: white;">👊 Lucha</option>
+                  <option value="Veneno" style="background: #1e293b; color: white;">☠️ Veneno</option>
+                  <option value="Tierra" style="background: #1e293b; color: white;">⛰️ Tierra</option>
+                  <option value="Volador" style="background: #1e293b; color: white;">🦅 Volador</option>
+                  <option value="Psíquico" style="background: #1e293b; color: white;">🔮 Psíquico</option>
+                  <option value="Bicho" style="background: #1e293b; color: white;">🐛 Bicho</option>
+                  <option value="Roca" style="background: #1e293b; color: white;">🗿 Roca</option>
+                  <option value="Fantasma" style="background: #1e293b; color: white;">👻 Fantasma</option>
+                  <option value="Dragón" style="background: #1e293b; color: white;">🐲 Dragón</option>
+                  <option value="Siniestro" style="background: #1e293b; color: white;">🌙 Siniestro</option>
+                  <option value="Acero" style="background: #1e293b; color: white;">⚙️ Acero</option>
+                  <option value="Hada" style="background: #1e293b; color: white;">🧚 Hada</option>
+                </select>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <input type="number" id="player1CP" min="1" placeholder="CP" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.1); color: white; font-size: 14px;" oninput="updateBattleWheel()">
+              </div>
+              
+              <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; min-height: 60px; display: flex; flex-direction: column; justify-content: center;">
+                <div style="color: rgba(255,255,255,0.7); font-size: 12px;">CP Efectivo</div>
+                <div style="color: #3b82f6; font-weight: bold; font-size: 18px;" id="effectiveCP1">-</div>
+              </div>
+            </div>
+            
+            <!-- Player 2 (Right Side - Red) -->
+            <div style="background: rgba(239, 68, 68, 0.1); padding: 20px; border-radius: 15px; border: 2px solid rgba(239, 68, 68, 0.4);">
+              <h3 style="color: #ef4444; margin-bottom: 15px; text-align: center; font-size: 18px;">🔴 Entrenador 2</h3>
+              <div style="margin-bottom: 12px;">
+                <input type="text" id="player2Name" placeholder="Nombre del entrenador" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.1); color: white; font-size: 14px;" oninput="updateBattleWheel()">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <input type="text" id="player2Pokemon" placeholder="Nombre del Pokémon" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.1); color: white; font-size: 14px;" oninput="updateBattleWheel()">
+              </div>
+              <div style="margin-bottom: 12px;">
+                <select id="player2Type" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.1); color: white; font-size: 14px;" onchange="updateBattleWheel()">
+                  <option value="" style="background: #1e293b; color: white;">Tipo del Pokémon</option>
+                  <option value="Normal" style="background: #1e293b; color: white;">⚪ Normal</option>
+                  <option value="Fuego" style="background: #1e293b; color: white;">🔥 Fuego</option>
+                  <option value="Agua" style="background: #1e293b; color: white;">💧 Agua</option>
+                  <option value="Planta" style="background: #1e293b; color: white;">🌱 Planta</option>
+                  <option value="Eléctrico" style="background: #1e293b; color: white;">⚡ Eléctrico</option>
+                  <option value="Hielo" style="background: #1e293b; color: white;">🧊 Hielo</option>
+                  <option value="Lucha" style="background: #1e293b; color: white;">👊 Lucha</option>
+                  <option value="Veneno" style="background: #1e293b; color: white;">☠️ Veneno</option>
+                  <option value="Tierra" style="background: #1e293b; color: white;">⛰️ Tierra</option>
+                  <option value="Volador" style="background: #1e293b; color: white;">🦅 Volador</option>
+                  <option value="Psíquico" style="background: #1e293b; color: white;">🔮 Psíquico</option>
+                  <option value="Bicho" style="background: #1e293b; color: white;">🐛 Bicho</option>
+                  <option value="Roca" style="background: #1e293b; color: white;">🗿 Roca</option>
+                  <option value="Fantasma" style="background: #1e293b; color: white;">👻 Fantasma</option>
+                  <option value="Dragón" style="background: #1e293b; color: white;">🐲 Dragón</option>
+                  <option value="Siniestro" style="background: #1e293b; color: white;">🌙 Siniestro</option>
+                  <option value="Acero" style="background: #1e293b; color: white;">⚙️ Acero</option>
+                  <option value="Hada" style="background: #1e293b; color: white;">🧚 Hada</option>
+                </select>
+              </div>
+              <div style="margin-bottom: 12px;">
+                <input type="number" id="player2CP" min="1" placeholder="CP" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.1); color: white; font-size: 14px;" oninput="updateBattleWheel()">
+              </div>
+              
+              <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.2); border-radius: 8px; min-height: 60px; display: flex; flex-direction: column; justify-content: center;">
+                <div style="color: rgba(255,255,255,0.7); font-size: 12px;">CP Efectivo</div>
+                <div style="color: #ef4444; font-weight: bold; font-size: 18px;" id="effectiveCP2">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showItems() {
+      updateNavigation('Items');
+      
+      main.innerHTML = `
+        <div class="wheel-container">
+          <h2 class="wheel-title" style="margin-bottom: 40px;">🎒 Rueda de Objetos</h2>
+          
+          <div class="wheel-area">
+            <div class="wheel-pointer"></div>
+            <div id="itemWheel" class="fortune-wheel">
+              <!-- SVG and items will be added by renderItemWheel -->
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Render the item wheel using the same system as Pokemon wheel
+      renderItemWheel();
+    }
+
+    function showEvents() {
+      updateNavigation('Events');
+      
+      main.innerHTML = `
+        <div class="wheel-container">
+          <h2 class="wheel-title" style="margin-bottom: 20px;">🎲 Rueda de Eventos</h2>
+          
+          <div style="margin-bottom: 20px; text-align: center;">
+            <label for="playerCount" style="color: white; margin-right: 10px; font-weight: bold;">Número de Jugadores:</label>
+            <select id="playerCount" style="padding: 5px 10px; border-radius: 5px; border: 1px solid #ccc; background: white; font-size: 14px;" onchange="savePlayerCount()">
+              <option value="2">2 Jugadores</option>
+              <option value="3">3 Jugadores</option>
+              <option value="4">4 Jugadores</option>
+              <option value="5">5 Jugadores</option>
+              <option value="6">6 Jugadores</option>
+              <option value="7">7 Jugadores</option>
+              <option value="8">8 Jugadores</option>
+            </select>
+          </div>
+          
+          <div class="wheel-area">
+            <div class="wheel-pointer"></div>
+            <div id="eventWheel" class="fortune-wheel">
+              <!-- SVG and events will be added by renderEventWheel -->
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Load saved player count
+      const savedPlayerCount = gameData.playerCount || 4;
+      document.getElementById('playerCount').value = savedPlayerCount;
+      
+      // Render the event wheel using the same system as Pokemon wheel
+      renderEventWheel();
+    }
+
+    // Item Wheel Functions
+    let isItemSpinning = false;
+
+    function getCurrentItemPrizes() {
+      return [
+        { name: 'Revivir', rarity: 'uncommon', emoji: '💊', description: 'Revive un Pokémon caído', type: 'item' },
+        { name: 'Ultra Ball', rarity: 'rare', emoji: '🖤', description: 'Máxima probabilidad de captura', type: 'item' },
+        { name: 'Repelente', rarity: 'common', emoji: '🚫', description: 'Repele Pokémon salvajes', type: 'item' },
+        { name: 'Caramelo Raro', rarity: 'legendary', emoji: '🍭', description: 'Sube un nivel a cualquier Pokémon', type: 'item' },
+        { name: 'Pokemuñeco', rarity: 'uncommon', emoji: '🧸', description: 'Escapa de cualquier batalla', type: 'item' },
+        { name: 'Banda Focus', rarity: 'rare', emoji: '🥋', description: 'Sobrevive con 1 HP', type: 'item' },
+        { name: 'Zapatos Rápidos', rarity: 'uncommon', emoji: '👟', description: 'Aumenta velocidad de movimiento', type: 'item' },
+        { name: 'CUCHILLO', rarity: 'legendary', emoji: '🔪', description: 'Arma peligrosa y afilada', type: 'item' },
+        { name: 'MINA TERRESTRE', rarity: 'legendary', emoji: '💣', description: 'Explosivo extremadamente peligroso', type: 'item' }
+      ];
+    }
+
+    function renderItemWheel() {
+      const itemPrizes = getCurrentItemPrizes();
+      const totalPrizes = itemPrizes.length;
+      const sliceAngle = 360 / totalPrizes;
+      
+      const rarityColors = {
+        common: 'rgba(107, 114, 128, 0.8)',
+        uncommon: 'rgba(59, 130, 246, 0.8)',
+        rare: 'rgba(139, 92, 246, 0.8)',
+        legendary: 'rgba(245, 158, 11, 0.8)'
+      };
+      
+      const wheelElement = document.getElementById('itemWheel');
+      wheelElement.className = 'fortune-wheel';
+      wheelElement.innerHTML = `
+        <svg class="wheel-svg" viewBox="0 0 200 200">
+          ${itemPrizes.map((prize, index) => {
+            const startAngle = index * sliceAngle - 90; // Start from top (12 o'clock)
+            const endAngle = (index + 1) * sliceAngle - 90;
+            const startAngleRad = (startAngle * Math.PI) / 180;
+            const endAngleRad = (endAngle * Math.PI) / 180;
+            
+            const x1 = 100 + 90 * Math.cos(startAngleRad);
+            const y1 = 100 + 90 * Math.sin(startAngleRad);
+            const x2 = 100 + 90 * Math.cos(endAngleRad);
+            const y2 = 100 + 90 * Math.sin(endAngleRad);
+            
+            const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+            const fillColor = rarityColors[prize.rarity];
+            
+            return `
+              <path d="M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                    fill="${fillColor}" 
+                    stroke="rgba(255,255,255,0.3)" 
+                    stroke-width="1"/>
+            `;
+          }).join('')}
+        </svg>
+        
+        ${itemPrizes.map((prize, index) => {
+          const midAngle = (index * sliceAngle + sliceAngle / 2 - 90) * Math.PI / 180;
+          const textRadius = 60;
+          const x = 50 + textRadius * Math.cos(midAngle) / 100 * 50;
+          const y = 50 + textRadius * Math.sin(midAngle) / 100 * 50;
+          
+          return `
+            <div class="wheel-prize" style="
+              position: absolute;
+              left: ${x}%;
+              top: ${y}%;
+              transform: translate(-50%, -50%) rotate(${index * sliceAngle + sliceAngle / 2 - 90}deg);
+              font-size: clamp(6px, 1.5vw, 9px);
+              font-weight: bold;
+              color: white;
+              text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+              z-index: 10;
+              pointer-events: none;
+              white-space: nowrap;
+              max-width: 80px;
+              text-align: center;
+              font-family: 'Arial', sans-serif;
+              letter-spacing: 0.2px;
+              text-overflow: ellipsis;
+            ">
+              ${prize.name}
+            </div>
+          `;
+        }).join('')}
+        
+        <button id="spinItemBtn" class="spin-button" onclick="spinItemWheel()" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100;">
+          Girar
+        </button>
+      `;
+    }
+
+    function spinItemWheel() {
+      if (isItemSpinning) return;
+      
+      isItemSpinning = true;
+      const wheel = document.getElementById('itemWheel');
+      const spinBtn = document.getElementById('spinItemBtn');
+      
+      spinBtn.disabled = true;
+      spinBtn.textContent = '🌀 Girando...';
+      
+      const itemPrizes = getCurrentItemPrizes();
+      
+      // Strong spin like Pokemon wheel (8-12 rotations)
+      const minSpins = 8;
+      const maxSpins = 12;
+      const spinAmount = (Math.random() * (maxSpins - minSpins) + minSpins) * 360;
+      const finalRotation = spinAmount % 360;
+      
+      wheel.style.transform = `rotate(${spinAmount}deg)`;
+      
+      // Play spin sound
+      playSpinSound();
+      
+      setTimeout(() => {
+        // Calculate winner based on final rotation (using same logic as Pokemon wheel)
+        const sliceAngle = 360 / itemPrizes.length;
+        
+        // Calculate the actual final rotation angle (after all the rotations)
+        const actualFinalAngle = spinAmount % 360;
+        
+        // The pointer points upward, so we need to see which slice is at the top
+        // Account for the wheel rotation direction
+        let pointerAngle = (360 - actualFinalAngle) % 360;
+        
+        // Calculate which slice the pointer is pointing to
+        const winnerIndex = Math.floor(pointerAngle / sliceAngle) % itemPrizes.length;
+        const winner = itemPrizes[winnerIndex];
+        
+        // Add item to inventory
+        const newItem = {
+          ...winner,
+          timestamp: Date.now(),
+          id: Date.now()
+        };
+        
+        if (!gameData.items) gameData.items = [];
+        gameData.items.push(newItem);
+        
+        // Save to localStorage
+        localStorage.setItem('pokemonWheelData', JSON.stringify(gameData));
+        
+        // Show popup result
+        showItemWinnerPopup(winner);
+        
+        // Reset button
+        spinBtn.disabled = false;
+        spinBtn.textContent = 'Girar';
+        isItemSpinning = false;
+      }, 4000);
+    }
+
+    function showItemWinnerPopup(winner) {
+      const rarityColors = {
+        common: '#6b7280',
+        uncommon: '#3b82f6',
+        rare: '#8b5cf6',
+        legendary: '#f59e0b'
+      };
+      
+      const popup = document.createElement('div');
+      popup.className = 'battle-popup';
+      popup.innerHTML = `
+        <div class="battle-popup-content" style="background: linear-gradient(135deg, ${rarityColors[winner.rarity]}22, ${rarityColors[winner.rarity]}44); border: 3px solid ${rarityColors[winner.rarity]}; position: relative;">
+          <button onclick="this.closest('.battle-popup').remove(); showItems();" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 30px; height: 30px; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+          <div style="font-size: 80px; margin-bottom: 20px;">${winner.emoji}</div>
+          <div class="winner-text" style="color: ${rarityColors[winner.rarity]}; font-size: 32px; margin-bottom: 30px;">¡${winner.name}!</div>
+        </div>
+      `;
+      
+      document.body.appendChild(popup);
+      
+      // Auto-close popup after 4 seconds
+      setTimeout(() => {
+        document.body.removeChild(popup);
+        // Refresh the items view to show new item in inventory
+        showItems();
+      }, 4000);
+    }
+
+    // Event Wheel Functions
+    function savePlayerCount() {
+      const playerCount = document.getElementById('playerCount').value;
+      gameData.playerCount = parseInt(playerCount);
+      saveData();
+    }
+
+    function savePlayerCount() {
+      const playerCount = document.getElementById('playerCount').value;
+      gameData.playerCount = parseInt(playerCount);
+      saveData();
+    }
+
+    let isEventSpinning = false;
+
+    function getCurrentEventPrizes() {
+      return [
+        { name: 'Item', rarity: 'common', emoji: '🎁', description: 'You found an item', type: 'event' },
+        { name: 'Strange Tree', rarity: 'uncommon', emoji: '🌳', description: 'A mysterious tree blocks your path', type: 'event' },
+        { name: 'Team Rocket', rarity: 'rare', emoji: '🚀', description: 'Team Rocket appears to cause trouble', type: 'event' },
+        { name: 'Aerodactyl Abduction', rarity: 'legendary', emoji: '🦅', description: 'An Aerodactyl swoops down from above', type: 'event' },
+        { name: 'Inverse Battle', rarity: 'uncommon', emoji: '🔄', description: 'Type effectiveness is reversed', type: 'event' },
+        { name: 'Big Dice', rarity: 'rare', emoji: '🎲', description: 'A giant dice appears', type: 'event' },
+        { name: 'Trade a Pokemon', rarity: 'common', emoji: '🤝', description: 'A trainer wants to trade Pokemon', type: 'event' },
+        { name: 'Stat Holiday', rarity: 'uncommon', emoji: '📈', description: 'Your Pokemon stats are boosted', type: 'event' },
+        { name: 'Egg', rarity: 'common', emoji: '🥚', description: 'You found a mysterious egg', type: 'event' },
+        { name: 'FIRE!!!', rarity: 'rare', emoji: '🔥', description: 'Everything is on fire!', type: 'event' },
+        { name: 'METEOR!!!', rarity: 'legendary', emoji: '☄️', description: 'A meteor crashes nearby!', type: 'event' },
+        { name: 'Rival Battle', rarity: 'rare', emoji: '⚔️', description: 'Your rival challenges you', type: 'event' },
+        { name: 'Ball Shortage', rarity: 'uncommon', emoji: '⚽', description: 'Pokeballs are running low', type: 'event' },
+        { name: 'ALL OUT!', rarity: 'legendary', emoji: '💥', description: 'All-out chaos ensues!', type: 'event' },
+        { name: 'Rat Time', rarity: 'common', emoji: '🐭', description: 'Rattata swarm appears', type: 'event' },
+        { name: 'Radio Broadcast', rarity: 'common', emoji: '📻', description: 'Emergency broadcast received', type: 'event' }
+      ];
+    }
+
+    function renderEventWheel() {
+      const eventPrizes = getCurrentEventPrizes();
+      const totalPrizes = eventPrizes.length;
+      const sliceAngle = 360 / totalPrizes;
+      
+      const rarityColors = {
+        common: 'rgba(107, 114, 128, 0.8)',
+        uncommon: 'rgba(59, 130, 246, 0.8)',
+        rare: 'rgba(139, 92, 246, 0.8)',
+        legendary: 'rgba(245, 158, 11, 0.8)'
+      };
+      
+      const wheelElement = document.getElementById('eventWheel');
+      wheelElement.className = 'fortune-wheel';
+
+      wheelElement.innerHTML = `
+        <svg class="wheel-svg" viewBox="0 0 200 200">
+          ${eventPrizes.map((prize, index) => {
+            const startAngle = index * sliceAngle - 90;
+            const endAngle = (index + 1) * sliceAngle - 90;
+            const startAngleRad = (startAngle * Math.PI) / 180;
+            const endAngleRad = (endAngle * Math.PI) / 180;
+            
+            const x1 = 100 + 90 * Math.cos(startAngleRad);
+            const y1 = 100 + 90 * Math.sin(startAngleRad);
+            const x2 = 100 + 90 * Math.cos(endAngleRad);
+            const y2 = 100 + 90 * Math.sin(endAngleRad);
+            
+            const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+            const fillColor = rarityColors[prize.rarity];
+            
+            return `
+              <path d="M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                    fill="${fillColor}" 
+                    stroke="rgba(255,255,255,0.3)" 
+                    stroke-width="1"/>
+            `;
+          }).join('')}
+        </svg>
+        
+        ${eventPrizes.map((prize, index) => {
+          const midAngle = (index * sliceAngle + sliceAngle / 2 - 90) * Math.PI / 180;
+          const textRadius = 60;
+          const x = 50 + textRadius * Math.cos(midAngle) / 100 * 50;
+          const y = 50 + textRadius * Math.sin(midAngle) / 100 * 50;
+          
+          // Split long names into two lines
+          const words = prize.name.split(' ');
+          let line1 = '', line2 = '';
+          
+          if (words.length > 2) {
+            // For 3+ words, split roughly in half
+            const midPoint = Math.ceil(words.length / 2);
+            line1 = words.slice(0, midPoint).join(' ');
+            line2 = words.slice(midPoint).join(' ');
+          } else if (words.length === 2) {
+            line1 = words[0];
+            line2 = words[1];
+          } else {
+            line1 = prize.name;
+            line2 = '';
+          }
+          
+          return `
+            <div class="wheel-prize" style="
+              position: absolute;
+              left: ${x}%;
+              top: ${y}%;
+              transform: translate(-50%, -50%) rotate(${index * sliceAngle + sliceAngle / 2 - 90}deg);
+              font-size: clamp(4px, 0.9vw, 6px);
+              font-weight: bold;
+              color: white;
+              text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+              z-index: 10;
+              pointer-events: none;
+              white-space: nowrap;
+              max-width: 60px;
+              text-align: center;
+              font-family: 'Arial', sans-serif;
+              letter-spacing: 0.1px;
+              line-height: 1.2;
+            ">
+              <div style="margin-bottom: -1px;">${line1}</div>
+              ${line2 ? `<div>${line2}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+        
+        <button id="spinEventBtn" class="spin-button" onclick="spinEventWheel()" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100;">
+          Girar
+        </button>
+      `;
+    }
+
+    function spinEventWheel() {
+      if (isEventSpinning) return;
+      
+      isEventSpinning = true;
+      const wheel = document.getElementById('eventWheel');
+      const spinBtn = document.getElementById('spinEventBtn');
+      
+      spinBtn.disabled = true;
+      spinBtn.textContent = '🌀 Girando...';
+      
+      const eventPrizes = getCurrentEventPrizes();
+      
+      // Strong spin like other wheels (8-12 rotations)
+      const minSpins = 8;
+      const maxSpins = 12;
+      const spinAmount = (Math.random() * (maxSpins - minSpins) + minSpins) * 360;
+      
+      wheel.style.transform = `rotate(${spinAmount}deg)`;
+      
+      // Play spin sound
+      playSpinSound();
+      
+      setTimeout(() => {
+        // Calculate winner based on final rotation (using same logic as other wheels)
+        const sliceAngle = 360 / eventPrizes.length;
+        
+        // Calculate the actual final rotation angle (after all the rotations)
+        const actualFinalAngle = spinAmount % 360;
+        
+        // The pointer points upward, so we need to see which slice is at the top
+        let pointerAngle = (360 - actualFinalAngle) % 360;
+        
+        // Calculate which slice the pointer is pointing to
+        const winnerIndex = Math.floor(pointerAngle / sliceAngle) % eventPrizes.length;
+        const winner = eventPrizes[winnerIndex];
+        
+        // Add event to history
+        const newEvent = {
+          ...winner,
+          timestamp: Date.now(),
+          id: Date.now()
+        };
+        
+        if (!gameData.events) gameData.events = [];
+        gameData.events.push(newEvent);
+        
+        // Save to localStorage
+        localStorage.setItem('pokemonWheelData', JSON.stringify(gameData));
+        
+        // Show popup result
+        showEventWinnerPopup(winner);
+        
+        // Reset button
+        spinBtn.disabled = false;
+        spinBtn.textContent = 'Girar';
+        isEventSpinning = false;
+      }, 4000);
+    }
+
+    function showEventWinnerPopup(winner) {
+      // Get available zones for location-based events
+      const availableZones = getMapCategories()[0].zones.filter(zone => 
+        zone.name !== 'Todo' && zone.name !== 'Solo Rattata'
+      );
+      
+      // Determine event location and player based on event type
+      let eventLocation = '';
+      let eventMessage = winner.name;
+      
+      if (['Item', 'Strange Tree', 'FIRE!!!', 'Rival Battle', 'Egg', 'Team Rocket'].includes(winner.name)) {
+        // Pick random zone from available zones
+        const randomZone = availableZones[Math.floor(Math.random() * availableZones.length)];
+        eventLocation = ` en ${randomZone.name}`;
+      } else if (winner.name === 'Aerodactyl Abduction') {
+        // Pick random zone and random player
+        const randomZone = availableZones[Math.floor(Math.random() * availableZones.length)];
+        const playerCount = gameData.playerCount || 4;
+        const randomPlayer = Math.floor(Math.random() * playerCount) + 1;
+        eventLocation = ` a ${randomZone.name}`;
+        eventMessage = `Jugador ${randomPlayer} secuestrado`;
+      } else if (winner.name === 'METEOR!!!') {
+        // Pick between Lavender and Pallet
+        const meteorLocations = ['Lavender', 'Pallet'];
+        const randomLocation = meteorLocations[Math.floor(Math.random() * meteorLocations.length)];
+        eventLocation = ` en ${randomLocation}`;
+      }
+      
+      const rarityColors = {
+        common: '#6b7280',
+        uncommon: '#3b82f6',
+        rare: '#8b5cf6',
+        legendary: '#f59e0b'
+      };
+      
+      const popup = document.createElement('div');
+      popup.className = 'battle-popup';
+      popup.innerHTML = `
+        <div class="battle-popup-content" style="background: linear-gradient(135deg, ${rarityColors[winner.rarity]}22, ${rarityColors[winner.rarity]}44); border: 3px solid ${rarityColors[winner.rarity]}; position: relative;">
+          <button onclick="this.closest('.battle-popup').remove(); showEvents();" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 30px; height: 30px; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+          <div style="font-size: 80px; margin-bottom: 20px;">${winner.emoji}</div>
+          <div class="winner-text" style="color: ${rarityColors[winner.rarity]}; font-size: 32px; margin-bottom: 30px;">¡${eventMessage}${eventLocation}!</div>
+        </div>
+      `;
+      
+      document.body.appendChild(popup);
+      
+      // Store the event result with location and player info
+      gameData.events = gameData.events || [];
+      const eventData = {
+        name: winner.name,
+        emoji: winner.emoji,
+        location: eventLocation.replace(' en ', '').replace(' a ', ''),
+        timestamp: Date.now(),
+        rarity: winner.rarity
+      };
+      
+      // Add player info for Aerodactyl Abduction  
+      if (winner.name === 'Aerodactyl Abduction') {
+        const playerCount = gameData.playerCount || 4;
+        const randomPlayer = Math.floor(Math.random() * playerCount) + 1;
+        eventData.player = randomPlayer;
+        eventData.message = `Jugador ${randomPlayer} secuestrado`;
+        
+        // Update the displayed text for Aerodactyl Abduction
+        popupText = `¡Jugador ${randomPlayer} secuestrado a ${eventLocation.replace('a ', '')}!`;
+      }
+      
+      gameData.events.unshift(eventData);
+      
+      // Keep only last 50 events
+      if (gameData.events.length > 50) {
+        gameData.events = gameData.events.slice(0, 50);
+      }
+      
+      saveData();
+      
+      // Auto-close popup after 4 seconds
+      setTimeout(() => {
+        document.body.removeChild(popup);
+        // Refresh the events view to show new event in history
+        showEvents();
+      }, 4000);
+    }
+
+    // Battle System Functions
+    let isBattleSpinning = false;
+
+    // Type effectiveness chart
+    const typeEffectiveness = {
+      'Fuego': { strong: ['Planta', 'Hielo', 'Bicho', 'Acero'], weak: ['Agua', 'Tierra', 'Roca'], immune: [] },
+      'Agua': { strong: ['Fuego', 'Tierra', 'Roca'], weak: ['Planta', 'Eléctrico'], immune: [] },
+      'Planta': { strong: ['Agua', 'Tierra', 'Roca'], weak: ['Fuego', 'Hielo', 'Veneno', 'Volador', 'Bicho'], immune: [] },
+      'Eléctrico': { strong: ['Agua', 'Volador'], weak: ['Tierra'], immune: ['Tierra'] },
+      'Psíquico': { strong: ['Lucha', 'Veneno'], weak: ['Bicho', 'Fantasma', 'Siniestro'], immune: ['Siniestro'] },
+      'Hielo': { strong: ['Planta', 'Tierra', 'Volador', 'Dragón'], weak: ['Fuego', 'Lucha', 'Roca', 'Acero'], immune: [] },
+      'Dragón': { strong: ['Dragón'], weak: ['Hielo', 'Hada'], immune: ['Hada'] },
+      'Fantasma': { strong: ['Psíquico', 'Fantasma'], weak: ['Fantasma', 'Siniestro'], immune: ['Normal', 'Lucha'] },
+      'Veneno': { strong: ['Planta', 'Hada'], weak: ['Tierra', 'Psíquico'], immune: ['Acero'] },
+      'Tierra': { strong: ['Fuego', 'Eléctrico', 'Veneno', 'Roca', 'Acero'], weak: ['Agua', 'Planta', 'Hielo'], immune: ['Volador'] },
+      'Volador': { strong: ['Planta', 'Lucha', 'Bicho'], weak: ['Eléctrico', 'Hielo', 'Roca'], immune: [] },
+      'Bicho': { strong: ['Planta', 'Psíquico', 'Siniestro'], weak: ['Fuego', 'Volador', 'Roca'], immune: [] },
+      'Roca': { strong: ['Fuego', 'Hielo', 'Volador', 'Bicho'], weak: ['Agua', 'Planta', 'Lucha', 'Tierra', 'Acero'], immune: [] },
+      'Lucha': { strong: ['Normal', 'Hielo', 'Roca', 'Siniestro', 'Acero'], weak: ['Volador', 'Psíquico', 'Hada'], immune: ['Fantasma'] },
+      'Acero': { strong: ['Hielo', 'Roca', 'Hada'], weak: ['Fuego', 'Lucha', 'Tierra'], immune: ['Veneno'] },
+      'Siniestro': { strong: ['Psíquico', 'Fantasma'], weak: ['Lucha', 'Bicho', 'Hada'], immune: [] },
+      'Hada': { strong: ['Lucha', 'Dragón', 'Siniestro'], weak: ['Veneno', 'Acero'], immune: [] },
+      'Normal': { strong: [], weak: ['Lucha'], immune: ['Fantasma'] }
+    };
+
+    function calculateTypeEffectiveness(attackerType, defenderType) {
+      if (!attackerType || !defenderType) return 1;
+      
+      const attacker = typeEffectiveness[attackerType];
+      if (!attacker) return 1;
+      
+      if (attacker.immune.includes(defenderType)) return 0;
+      if (attacker.strong.includes(defenderType)) return 2;
+      if (attacker.weak.includes(defenderType)) return 0.5;
+      return 1;
+    }
+
+    function updateBattleWheel() {
+      const player1Name = document.getElementById('player1Name').value.trim();
+      const player1Pokemon = document.getElementById('player1Pokemon').value.trim();
+      const player1Type = document.getElementById('player1Type').value;
+      const player1CP = parseInt(document.getElementById('player1CP').value) || 0;
+      
+      const player2Name = document.getElementById('player2Name').value.trim();
+      const player2Pokemon = document.getElementById('player2Pokemon').value.trim();
+      const player2Type = document.getElementById('player2Type').value;
+      const player2CP = parseInt(document.getElementById('player2CP').value) || 0;
+      
+      // Calculate type effectiveness if both types are selected
+      if (player1Type && player2Type && player1CP > 0 && player2CP > 0) {
+        const effectiveness1vs2 = calculateTypeEffectiveness(player1Type, player2Type);
+        const effectiveness2vs1 = calculateTypeEffectiveness(player2Type, player1Type);
+        
+        // Apply type effectiveness to CP
+        const effectiveCP1 = Math.round(player1CP * effectiveness1vs2);
+        const effectiveCP2 = Math.round(player2CP * effectiveness2vs1);
+        
+        // Update CP displays
+        document.getElementById('effectiveCP1').textContent = effectiveCP1;
+        document.getElementById('effectiveCP2').textContent = effectiveCP2;
+        
+        // Update wheel gradient based on effective CP
+        const totalCP = effectiveCP1 + effectiveCP2;
+        const player1Percentage = totalCP > 0 ? Math.round((effectiveCP1 / totalCP) * 360) : 180;
+        const wheel = document.getElementById('battleWheel');
+        wheel.style.background = `conic-gradient(#3b82f6 0deg ${player1Percentage}deg, #ef4444 ${player1Percentage}deg 360deg)`;
+        
+        // Store battle data
+        window.battleData = {
+          player1: { name: player1Name, pokemon: player1Pokemon, type: player1Type, cp: effectiveCP1 },
+          player2: { name: player2Name, pokemon: player2Pokemon, type: player2Type, cp: effectiveCP2 },
+          player1WinChance: effectiveCP1 / totalCP
+        };
+      } else {
+        // Reset to default state
+        document.getElementById('effectiveCP1').textContent = player1CP > 0 ? player1CP : '-';
+        document.getElementById('effectiveCP2').textContent = player2CP > 0 ? player2CP : '-';
+        document.getElementById('battleWheel').style.background = 'conic-gradient(#3b82f6 0deg 180deg, #ef4444 180deg 360deg)';
+        window.battleData = null;
+      }
+    }
+
+    function showTypeEffectiveness(type1, type2, eff1vs2, eff2vs1) {
+      const typeEffDiv = document.getElementById('typeEffectiveness');
+      const effectivenessDetails = document.getElementById('effectivenessDetails');
+      
+      let effectivenessText = '';
+      if (eff1vs2 > 1) {
+        effectivenessText += `<p style="color: #22c55e; margin: 5px 0;">🔥 ${type1} es súper efectivo contra ${type2} (+${Math.round((eff1vs2 - 1) * 100)}% CP)</p>`;
+      } else if (eff1vs2 < 1 && eff1vs2 > 0) {
+        effectivenessText += `<p style="color: #ef4444; margin: 5px 0;">💧 ${type1} no es muy efectivo contra ${type2} (-${Math.round((1 - eff1vs2) * 100)}% CP)</p>`;
+      } else if (eff1vs2 === 0) {
+        effectivenessText += `<p style="color: #6b7280; margin: 5px 0;">🚫 ${type1} no afecta a ${type2} (0 CP)</p>`;
+      }
+      
+      if (eff2vs1 > 1) {
+        effectivenessText += `<p style="color: #22c55e; margin: 5px 0;">🔥 ${type2} es súper efectivo contra ${type1} (+${Math.round((eff2vs1 - 1) * 100)}% CP)</p>`;
+      } else if (eff2vs1 < 1 && eff2vs1 > 0) {
+        effectivenessText += `<p style="color: #ef4444; margin: 5px 0;">💧 ${type2} no es muy efectivo contra ${type1} (-${Math.round((1 - eff2vs1) * 100)}% CP)</p>`;
+      } else if (eff2vs1 === 0) {
+        effectivenessText += `<p style="color: #6b7280; margin: 5px 0;">🚫 ${type2} no afecta a ${type1} (0 CP)</p>`;
+      }
+      
+      if (eff1vs2 === 1 && eff2vs1 === 1) {
+        effectivenessText = '<p style="color: rgba(255,255,255,0.8); margin: 5px 0;">⚖️ Los tipos no tienen ventaja entre sí</p>';
+      }
+      
+      effectivenessDetails.innerHTML = effectivenessText;
+      typeEffDiv.style.display = 'block';
+    }
+
+    function showBattleWinnerPopup(winner, loser) {
+      const popup = document.createElement('div');
+      popup.className = 'battle-popup';
+      popup.innerHTML = `
+        <div class="battle-popup-content">
+          <div class="celebration">🏆</div>
+          <div class="winner-text" style="color: ${winner === window.battleData.player1 ? '#3b82f6' : '#ef4444'};">¡${winner.name} Gana!</div>
+          <div class="battle-details">
+            <strong>${winner.pokemon}</strong> (CP: ${winner.cp})<br>
+            ha derrotado a<br>
+            <strong>${loser.pokemon}</strong> (CP: ${loser.cp})
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(popup);
+      
+      // Auto-close popup and reset battle after 4 seconds
+      setTimeout(() => {
+        document.body.removeChild(popup);
+        resetBattle();
+      }, 4000);
+      
+      // Close on click
+      popup.addEventListener('click', () => {
+        document.body.removeChild(popup);
+        resetBattle();
+      });
+    }
+
+    function resetBattle() {
+      // Clear all input fields
+      document.getElementById('player1Name').value = '';
+      document.getElementById('player1Pokemon').value = '';
+      document.getElementById('player1Type').value = '';
+      document.getElementById('player1CP').value = '';
+      document.getElementById('player2Name').value = '';
+      document.getElementById('player2Pokemon').value = '';
+      document.getElementById('player2Type').value = '';
+      document.getElementById('player2CP').value = '';
+      
+      // Reset CP displays
+      document.getElementById('effectiveCP1').textContent = '-';
+      document.getElementById('effectiveCP2').textContent = '-';
+      
+      // Reset wheel rotation and colors
+      const wheel = document.getElementById('battleWheel');
+      wheel.style.transform = 'rotate(0deg)';
+      wheel.style.background = 'conic-gradient(#3b82f6 0deg 180deg, #ef4444 180deg 360deg)';
+      
+      // Reset triangle position
+      const triangle = document.getElementById('battleTriangle');
+      triangle.style.transform = 'translateX(-50%) rotate(180deg)';
+      
+      // Clear battle data
+      window.battleData = null;
+    }
+
+    function spinBattleWheel() {
+      // Check if all required fields are filled
+      const player1Name = document.getElementById('player1Name').value.trim();
+      const player1Pokemon = document.getElementById('player1Pokemon').value.trim();
+      const player1Type = document.getElementById('player1Type').value;
+      const player1CP = parseInt(document.getElementById('player1CP').value) || 0;
+      
+      const player2Name = document.getElementById('player2Name').value.trim();
+      const player2Pokemon = document.getElementById('player2Pokemon').value.trim();
+      const player2Type = document.getElementById('player2Type').value;
+      const player2CP = parseInt(document.getElementById('player2CP').value) || 0;
+      
+      if (isBattleSpinning) return;
+      
+      if (!player1Name || !player1Pokemon || !player1Type || player1CP <= 0 ||
+          !player2Name || !player2Pokemon || !player2Type || player2CP <= 0) {
+        alert('Por favor completa todos los campos de ambos entrenadores antes de iniciar la batalla');
+        return;
+      }
+      
+      // Make sure battle data is set
+      updateBattleWheel();
+      
+      if (!window.battleData) {
+        alert('Error al calcular datos de batalla. Por favor verifica todos los campos.');
+        return;
+      }
+      
+      isBattleSpinning = true;
+      const wheel = document.getElementById('battleWheel');
+      const triangle = document.getElementById('battleTriangle');
+      
+      // Random spin between 1080-2520 degrees (3-7 full rotations)
+      const spinAmount = Math.random() * 1440 + 1080;
+      wheel.style.transform = `rotate(${spinAmount}deg)`;
+      
+      // Play battle sound effect
+      playSpinSound();
+      
+      setTimeout(() => {
+        // Determine winner based on final position and CP ratio
+        const finalRotation = spinAmount % 360;
+        const player1WinChance = window.battleData.player1WinChance;
+        const player1WinAngle = player1WinChance * 360;
+        
+        const player1Wins = finalRotation < player1WinAngle;
+        const winner = player1Wins ? window.battleData.player1 : window.battleData.player2;
+        const loser = player1Wins ? window.battleData.player2 : window.battleData.player1;
+        
+        // Rotate triangle to point to winner
+        // Player 1 (blue) is on left side (180-360°), Player 2 (red) is on right side (0-180°)
+        // Base rotation is 180° (pointing down), then add direction
+        const triangleRotation = player1Wins ? 270 : 90; // 270° = point left (Player 1), 90° = point right (Player 2)
+        triangle.style.transform = `translateX(-50%) rotate(${triangleRotation}deg)`;
+        
+        // Show winner popup
+        showBattleWinnerPopup(winner, loser);
+        
+        isBattleSpinning = false;
+      }, 3000);
+    }
+
+    function updateNavigation(active) {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      const activeButton = document.querySelector(`.nav-item[onclick*="show${active}()"]`);
+      if (activeButton) {
+        activeButton.classList.add('active');
+      }
+    }
+
+    // Main Fortune Wheel renderer
+    function renderFortuneWheel() {
+      const currentPrizes = getCurrentWheelPrizes();
+      const totalPrizes = currentPrizes.length;
+      const sliceAngle = 360 / totalPrizes;
+      
+      main.innerHTML = `
+        <div class="wheel-container">
+          <div class="location-info">
+            <div class="map-name">${gameData.currentMap}</div>
+            <div class="zone-name">${gameData.currentZone}</div>
+          </div>
+          
+          <div class="wheel-area">
+            <div class="wheel-pointer"></div>
+            <div id="fortuneWheel" class="fortune-wheel">
+              <svg class="wheel-svg" viewBox="0 0 200 200">
+                ${currentPrizes.map((prize, index) => {
+                  const startAngle = index * sliceAngle - 90; // Start from top (12 o'clock)
+                  const endAngle = (index + 1) * sliceAngle - 90;
+                  const startAngleRad = (startAngle * Math.PI) / 180;
+                  const endAngleRad = (endAngle * Math.PI) / 180;
+                  
+                  const x1 = 100 + 90 * Math.cos(startAngleRad);
+                  const y1 = 100 + 90 * Math.sin(startAngleRad);
+                  const x2 = 100 + 90 * Math.cos(endAngleRad);
+                  const y2 = 100 + 90 * Math.sin(endAngleRad);
+                  
+                  const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+                  
+                  // Alternate colors for better visibility
+                  const colors = [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(34, 197, 94, 0.8)',
+                    'rgba(251, 191, 36, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(147, 51, 234, 0.8)',
+                    'rgba(6, 182, 212, 0.8)',
+                    'rgba(245, 101, 101, 0.8)',
+                    'rgba(16, 185, 129, 0.8)'
+                  ];
+                  const fillColor = colors[index % colors.length];
+                  
+                  return `
+                    <path d="M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                          fill="${fillColor}" 
+                          stroke="rgba(255,255,255,0.3)" 
+                          stroke-width="1"/>
+                  `;
+                }).join('')}
+              </svg>
+              
+              ${gameData.currentZone === 'Todo' ? '' : currentPrizes.map((prize, index) => {
+                const midAngle = (index * sliceAngle + sliceAngle / 2 - 90) * Math.PI / 180; // Align with slice position
+                const textRadius = 60;
+                const x = 50 + textRadius * Math.cos(midAngle) / 100 * 50;
+                const y = 50 + textRadius * Math.sin(midAngle) / 100 * 50;
+                
+                return `
+                  <div class="wheel-prize" style="
+                    position: absolute;
+                    left: ${x}%;
+                    top: ${y}%;
+                    transform: translate(-50%, -50%) rotate(${index * sliceAngle + sliceAngle / 2 - 90}deg);
+                    font-size: clamp(10px, 2.5vw, 14px);
+                    font-weight: bold;
+                    color: white;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+                    z-index: 10;
+                    pointer-events: none;
+                    white-space: nowrap;
+                    max-width: 80px;
+                    text-align: center;
+                    font-family: 'Arial', sans-serif;
+                    letter-spacing: 0.5px;
+                  ">
+                    ${prize.name}
+                  </div>
+                `;
+              }).join('')}
+              
+              <button id="spinBtn" class="spin-button">
+                ¡Explorar!
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Add spin functionality
+      document.getElementById('spinBtn').addEventListener('click', spinWheel);
+    }
+
+    // Spin wheel functionality
+    // Weighted selection function for Pokemon rarity
+    function selectWeightedPrize(prizes) {
+      // Calculate total weight
+      const totalWeight = prizes.reduce((sum, prize) => sum + (prize.weight || 5), 0);
+      
+      // Generate random number between 0 and total weight
+      let randomWeight = Math.random() * totalWeight;
+      
+      // Find the selected prize based on weighted probability
+      for (let i = 0; i < prizes.length; i++) {
+        const prizeWeight = prizes[i].weight || 5;
+        randomWeight -= prizeWeight;
+        if (randomWeight <= 0) {
+          return { prize: prizes[i], index: i };
+        }
+      }
+      
+      // Fallback to last prize (shouldn't happen)
+      return { prize: prizes[prizes.length - 1], index: prizes.length - 1 };
+    }
+
+    function spinWheel() {
+      if (isSpinning) return;
+
+      isSpinning = true;
+      gameData.totalSpins++;
+      
+      // Spin animation first - let physics determine the result
+      const wheel = document.getElementById('fortuneWheel');
+      const spinButton = document.getElementById('spinBtn');
+      
+      spinButton.disabled = true;
+      spinButton.textContent = 'Spinning...';
+      
+      // Reset wheel to starting position first, then calculate new spin
+      wheel.style.transition = 'none';
+      wheel.style.transform = 'rotate(0deg)';
+      
+      // Force a reflow to ensure the reset is applied
+      wheel.offsetHeight;
+      
+      // Generate consistent final rotation (same force every time, only final position varies)
+      const fixedRotations = 14; // Always exactly 14 full rotations for consistent spin force
+      const randomFinalAngle = Math.random() * 360; // Only the final landing position is random
+      const finalRotation = fixedRotations * 360 + randomFinalAngle;
+      
+      // Apply fast start with strong momentum feel - more aggressive easing
+      wheel.style.transition = 'transform 3.5s cubic-bezier(0.1, 0.7, 0.1, 1)';
+      wheel.style.transform = `rotate(${finalRotation}deg)`;
+      
+      // Play spin sound
+      playSpinSound();
+      
+      setTimeout(() => {
+        // Use weighted selection instead of pure physics
+        const currentPrizes = getCurrentWheelPrizes();
+        const { prize: selectedPrize, index: prizeIndex } = selectWeightedPrize(currentPrizes);
+        
+        // Still calculate physical wheel position for visual consistency
+        const sliceAngle = 360 / currentPrizes.length;
+        const actualFinalAngle = finalRotation % 360;
+        
+        // Award the weighted-selected prize
+        awardPrize(selectedPrize);
+        showPrizeModal(selectedPrize);
+        
+        // Update UI
+        saveData();
+        updateUI();
+        
+        // DON'T reset wheel here - let the modal close handler do it
+        isSpinning = false;
+        spinButton.disabled = false;
+        spinButton.textContent = 'Spin';
+      }, 3500);
+    }
+
+    // Pokemon management
+    function awardPrize(prize) {
+      // Add to Pokemon collection history with location context
+      gameData.prizes.push({
+        ...prize,
+        timestamp: Date.now(),
+        wonFromMap: gameData.currentMap,
+        wonFromZone: gameData.currentZone
+      });
+      
+      // Keep only last 50 Pokemon
+      if (gameData.prizes.length > 50) {
+        gameData.prizes = gameData.prizes.slice(-50);
+      }
+    }
+
+    function showPrizeModal(prize) {
+      const modal = document.createElement('div');
+      modal.className = 'prize-modal';
+      
+      modal.innerHTML = `
+        <div class="prize-content">
+          <div class="prize-inner">
+            <h3 class="prize-title">🎉 ¡Pokemon Encontrado! 🎉</h3>
+            <div class="prize-name">${prize.name}</div>
+            <div class="prize-details">
+              <div class="prize-location">Encontrado en: ${gameData.currentMap} - ${gameData.currentZone}</div>
+            </div>
+            <div class="prize-choice" style="margin-top: 20px;">
+              <p style="color: rgba(255,255,255,0.8); margin-bottom: 15px; font-size: 14px;">¿Qué te gustaría hacer?</p>
+              <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="choice-btn keep-btn" onclick="keepPrize(this.closest('.prize-modal'), '${prize.name}', '${gameData.currentMap}', '${gameData.currentZone}')">
+                  ⚡ Capturar Pokemon
+                </button>
+                <button class="choice-btn release-btn" onclick="releasePrize(this.closest('.prize-modal'), '${prize.name}')">
+                  🔄 Liberar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Auto catch after 15 seconds if no choice is made
+      setTimeout(() => {
+        if (modal.parentNode) {
+          keepPrize(modal, prize.name, gameData.currentMap, gameData.currentZone);
+        }
+      }, 15000);
+    }
+
+    function keepPrize(modal, prizeName, mapName, zoneName) {
+      // Pokemon was already added to history in awardPrize(), so just close modal
+      modal.innerHTML = `
+        <div class="prize-content">
+          <div class="prize-inner">
+            <h3 class="prize-title">✅ ¡Pokemon Capturado!</h3>
+            <div class="prize-name">${prizeName}</div>
+            <p style="color: rgba(255,255,255,0.8); margin: 15px 0; font-size: 14px;">
+              ¡${prizeName} se unió a tu equipo! Revisa tu Historial para ver todos los Pokemon capturados.
+            </p>
+            <button class="close-modal" onclick="closePrizeModal(this.closest('.prize-modal'))">
+              ¡Genial!
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        if (modal.parentNode) {
+          closePrizeModal(modal);
+        }
+      }, 3000);
+    }
+
+    function releasePrize(modal, prizeName) {
+      // Remove the last Pokemon from history (the one that was just awarded)
+      if (gameData.prizes.length > 0) {
+        gameData.prizes.pop(); // Remove the most recent Pokemon
+        saveData(); // Save the updated data
+      }
+      
+      modal.innerHTML = `
+        <div class="prize-content">
+          <div class="prize-inner">
+            <h3 class="prize-title">🔄 ¡Pokemon Liberado!</h3>
+            <div class="prize-name">${prizeName}</div>
+            <p style="color: rgba(255,255,255,0.8); margin: 15px 0; font-size: 14px;">
+              ${prizeName} fue liberado de vuelta a la naturaleza. ¡Intenta capturar otro Pokemon!
+            </p>
+            <button class="close-modal" onclick="closePrizeModal(this.closest('.prize-modal'))">
+              Continuar Explorando
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        if (modal.parentNode) {
+          closePrizeModal(modal);
+        }
+      }, 3000);
+    }
+
+    function closePrizeModal(modal) {
+      // Remove the modal
+      modal.remove();
+      
+      // Wheel stays at final position - no reset needed
+    }
+
+    // Utility functions
+    function showDailyReward() {
+      alert('¡Recompensa diaria reclamada! Regresa mañana por más.');
+    }
+
+    function showAchievements() {
+      alert('¡Sistema de logros próximamente!');
+    }
+
+    function updateLocation() {
+      const mapSelector = document.getElementById('mapSelector');
+      const zoneInput = document.getElementById('zoneInput');
+      
+      if (mapSelector && zoneInput) {
+        gameData.currentMap = mapSelector.value;
+        gameData.currentZone = zoneInput.value.trim() || 'Unknown Zone';
+        saveData();
+        alert('¡Ubicación actualizada exitosamente!');
+      }
+    }
+
+    function getMapCategories() {
+      // Check if we have custom maps stored, otherwise use defaults
+      if (!gameData.customMaps) {
+        gameData.customMaps = [
+        {
+          name: 'Kanto',
+          icon: '🗾',
+          description: 'La región Pokemon original donde comienza tu aventura',
+          zones: [
+            { map: 'Kanto', name: 'Cerulean Cave', icon: '💜', description: 'Cueva misteriosa con Pokemon legendarios' },
+            { map: 'Kanto', name: 'Mt. Moon', icon: '🌙', description: 'Cueva antigua llena de Pokemon tipo Roca' },
+            { map: 'Kanto', name: 'Viridian Forest', icon: '🌳', description: 'Bosque denso con Pokemon tipo Bicho' },
+            { map: 'Kanto', name: 'Route 16', icon: '🚴', description: 'Ruta ciclista hacia Ciudad Fucsia' },
+            { map: 'Kanto', name: 'Route 21', icon: '🏄', description: 'Ruta marítima hacia Isla Canela' },
+            { map: 'Kanto', name: 'Route 20', icon: '🌊', description: 'Ruta oceánica entre islas' },
+            { map: 'Kanto', name: 'Route 19', icon: '🏖️', description: 'Ruta costera con Pokemon acuáticos' },
+            { map: 'Kanto', name: 'Seafoam Islands', icon: '🧊', description: 'Islas heladas con Pokemon de hielo' },
+            { map: 'Kanto', name: 'Safari Zone', icon: '🦏', description: 'Reserva natural con Pokemon raros' },
+            { map: 'Kanto', name: 'Route 14', icon: '🌾', description: 'Sendero herboso al oeste de Ciudad Fucsia' },
+            { map: 'Kanto', name: 'Route 13', icon: '🌊', description: 'Ruta costera con Pokemon tipo Agua' },
+            { map: 'Kanto', name: 'Route 12', icon: '🎣', description: 'Ruta de pesca al sur de Pueblo Lavanda' },
+            { map: 'Kanto', name: 'Route 8', icon: '🛤️', description: 'Entrada subterránea a Ciudad Azafrán' },
+            { map: 'Kanto', name: 'Route 7', icon: '🌸', description: 'Camino hacia Ciudad Azafrán desde el oeste' },
+            { map: 'Kanto', name: 'Route 5', icon: '🛤️', description: 'Ruta sur desde Celeste hasta Azafrán' },
+            { map: 'Kanto', name: 'Route 9', icon: '⛰️', description: 'Sendero montañoso hacia Rock Tunnel' },
+            { map: 'Kanto', name: 'Rock Tunnel', icon: '🕳️', description: 'Túnel oscuro lleno de Pokemon tipo Roca' },
+            { map: 'Kanto', name: 'Power Plant', icon: '⚡', description: 'Planta eléctrica con Pokemon tipo Eléctrico' },
+            { map: 'Kanto', name: 'Todo', icon: '🌟', description: 'Todos los 151 Pokemon de Kanto' },
+            { map: 'Kanto', name: 'Solo Rattata', icon: '🐭', description: 'Solo Rattata en todas partes' }
+          ]
+        }
+        ];
+        saveData();
+      }
+      return gameData.customMaps;
+    }
+
+    function getAvailableZones() {
+      return getMapCategories().flatMap(map => map.zones);
+    }
+
+    function selectZone(mapName, zoneName) {
+      gameData.currentMap = mapName;
+      gameData.currentZone = zoneName;
+      saveData();
+      
+      // Show confirmation and switch to wheel
+      setTimeout(() => {
+        showWheel();
+      }, 100);
+    }
+
+    // Zone management functions
+    function showAddZoneModal(mapName) {
+      const modal = document.createElement('div');
+      modal.className = 'zone-modal';
+      modal.innerHTML = `
+        <div class="zone-modal-content">
+          <div class="zone-modal-inner">
+            <h3>Agregar Nueva Zona a ${mapName}</h3>
+            <div class="zone-form">
+              <div class="form-group">
+                <label>Ícono de Zona:</label>
+                <input type="text" id="zoneIcon" placeholder="🏔️" maxlength="2">
+              </div>
+              <div class="form-group">
+                <label>Nombre de Zona:</label>
+                <input type="text" id="zoneName" placeholder="Ingresa nombre de zona">
+              </div>
+              <div class="form-group">
+                <label>Descripción:</label>
+                <textarea id="zoneDescription" placeholder="Ingresa descripción de zona"></textarea>
+              </div>
+              <div class="form-actions">
+                <button onclick="addZone('${mapName}')" class="btn-primary">Agregar Zona</button>
+                <button onclick="closeZoneModal()" class="btn-secondary">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function showEditZoneModal(mapName, zoneIndex) {
+      const maps = getMapCategories();
+      const map = maps.find(m => m.name === mapName);
+      const zone = map.zones[zoneIndex];
+      
+      // Get current Pokemon for this zone
+      const currentPokemon = zoneSpecificPokemon[zone.name] || [];
+      
+      const modal = document.createElement('div');
+      modal.className = 'zone-modal';
+      modal.innerHTML = `
+        <div class="zone-modal-content">
+          <div class="zone-modal-inner">
+            <h3>Editar Zona en ${mapName}</h3>
+            <div class="zone-form">
+              <div class="form-group">
+                <label>Ícono de Zona:</label>
+                <input type="text" id="zoneIcon" value="${zone.icon}" maxlength="2">
+              </div>
+              <div class="form-group">
+                <label>Nombre de Zona:</label>
+                <input type="text" id="zoneName" value="${zone.name}">
+              </div>
+              <div class="form-group">
+                <label>Descripción:</label>
+                <textarea id="zoneDescription">${zone.description}</textarea>
+              </div>
+              
+              <div class="form-group">
+                <label>Pokemon en esta Zona:</label>
+                <div id="pokemonList" class="pokemon-list">
+                  ${currentPokemon.map((pokemon, index) => `
+                    <div class="pokemon-item" data-index="${index}">
+                      <input type="text" class="pokemon-name" value="${pokemon.name}" placeholder="Nombre Pokemon">
+                      <button type="button" class="remove-pokemon" onclick="removePokemon(${index})">❌</button>
+                    </div>
+                  `).join('')}
+                </div>
+                <button type="button" class="add-pokemon-btn" onclick="addPokemonToZone()">➕ Agregar Pokemon</button>
+              </div>
+              
+              <div class="form-actions">
+                <button onclick="updateZone('${mapName}', ${zoneIndex})" class="btn-primary">Actualizar Zona</button>
+                <button onclick="closeZoneModal()" class="btn-secondary">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function addPokemonToZone() {
+      const pokemonList = document.getElementById('pokemonList');
+      const index = pokemonList.children.length;
+      const newPokemonDiv = document.createElement('div');
+      newPokemonDiv.className = 'pokemon-item';
+      newPokemonDiv.setAttribute('data-index', index);
+      newPokemonDiv.innerHTML = `
+        <input type="text" class="pokemon-name" value="" placeholder="Nombre Pokemon">
+        <button type="button" class="remove-pokemon" onclick="removePokemon(${index})">❌</button>
+      `;
+      pokemonList.appendChild(newPokemonDiv);
+      updatePokemonIndices();
+    }
+
+    function removePokemon(index) {
+      const pokemonItem = document.querySelector(`[data-index="${index}"]`);
+      if (pokemonItem) {
+        pokemonItem.remove();
+        updatePokemonIndices();
+      }
+    }
+
+    function updatePokemonIndices() {
+      const pokemonItems = document.querySelectorAll('.pokemon-item');
+      pokemonItems.forEach((item, index) => {
+        item.setAttribute('data-index', index);
+        const removeBtn = item.querySelector('.remove-pokemon');
+        removeBtn.setAttribute('onclick', `removePokemon(${index})`);
+      });
+    }
+
+    function addZone(mapName) {
+      const icon = document.getElementById('zoneIcon').value.trim() || '🏔️';
+      const name = document.getElementById('zoneName').value.trim();
+      const description = document.getElementById('zoneDescription').value.trim();
+      
+      if (!name || !description) {
+        alert('Please fill in all fields');
+        return;
+      }
+      
+      const maps = getMapCategories();
+      const mapIndex = maps.findIndex(m => m.name === mapName);
+      
+      if (mapIndex !== -1) {
+        const newZone = {
+          map: mapName,
+          name: name,
+          icon: icon,
+          description: description
+        };
+        
+        maps[mapIndex].zones.push(newZone);
+        gameData.customMaps = maps;
+        saveData();
+        closeZoneModal();
+        showMaps(); // Refresh the view
+      }
+    }
+
+    function updateZone(mapName, zoneIndex) {
+      const icon = document.getElementById('zoneIcon').value.trim() || '🏔️';
+      const name = document.getElementById('zoneName').value.trim();
+      const description = document.getElementById('zoneDescription').value.trim();
+      
+      if (!name || !description) {
+        alert('Please fill in all fields');
+        return;
+      }
+      
+      // Collect Pokemon data
+      const pokemonItems = document.querySelectorAll('.pokemon-item');
+      const pokemonList = [];
+      
+      pokemonItems.forEach(item => {
+        const pokemonName = item.querySelector('.pokemon-name').value.trim();
+        
+        if (pokemonName) {
+          pokemonList.push({
+            name: pokemonName,
+            type: 'pokemon'
+          });
+        }
+      });
+      
+      const maps = getMapCategories();
+      const mapIndex = maps.findIndex(m => m.name === mapName);
+      
+      if (mapIndex !== -1 && maps[mapIndex].zones[zoneIndex]) {
+        const oldZoneName = maps[mapIndex].zones[zoneIndex].name;
+        
+        maps[mapIndex].zones[zoneIndex] = {
+          map: mapName,
+          name: name,
+          icon: icon,
+          description: description
+        };
+        
+        // Update Pokemon configuration for this zone
+        if (pokemonList.length > 0) {
+          zoneSpecificPokemon[name] = pokemonList;
+        } else {
+          // Remove Pokemon config if no Pokemon defined
+          delete zoneSpecificPokemon[name];
+        }
+        
+        // If zone name changed, update Pokemon config key
+        if (oldZoneName !== name) {
+          if (zoneSpecificPokemon[oldZoneName]) {
+            zoneSpecificPokemon[name] = zoneSpecificPokemon[oldZoneName];
+            delete zoneSpecificPokemon[oldZoneName];
+          }
+        }
+        
+        // Update current zone if it was the one being edited
+        if (gameData.currentMap === mapName && gameData.currentZone === oldZoneName) {
+          gameData.currentZone = name;
+        }
+        
+        // Update wheel data key if zone name changed
+        if (oldZoneName !== name) {
+          const oldKey = `${mapName}|${oldZoneName}`;
+          const newKey = `${mapName}|${name}`;
+          if (gameData.zoneWheels[oldKey]) {
+            gameData.zoneWheels[newKey] = gameData.zoneWheels[oldKey];
+            delete gameData.zoneWheels[oldKey];
+          }
+        }
+        
+        gameData.customMaps = maps;
+        saveData();
+        closeZoneModal();
+        showMaps(); // Refresh the view
+      }
+    }
+
+    function deleteZone(mapName, zoneIndex) {
+      if (!confirm('¿Estás seguro de que quieres eliminar esta zona? Esto también eliminará todos los datos de rueda asociados.')) {
+        return;
+      }
+      
+      const maps = getMapCategories();
+      const mapIndex = maps.findIndex(m => m.name === mapName);
+      
+      if (mapIndex !== -1 && maps[mapIndex].zones[zoneIndex]) {
+        const zoneToDelete = maps[mapIndex].zones[zoneIndex];
+        
+        // Check if this is the currently selected zone
+        if (gameData.currentMap === mapName && gameData.currentZone === zoneToDelete.name) {
+          // Switch to the first available zone in any map
+          let newMap = maps[0];
+          let newZone = newMap.zones[0];
+          
+          // Try to find another zone in the same map first
+          if (maps[mapIndex].zones.length > 1) {
+            const remainingZones = maps[mapIndex].zones.filter((_, i) => i !== zoneIndex);
+            newZone = remainingZones[0];
+            newMap = maps[mapIndex];
+          }
+          
+          gameData.currentMap = newMap.name;
+          gameData.currentZone = newZone.name;
+        }
+        
+        // Remove wheel data for this zone
+        const zoneKey = `${mapName}|${zoneToDelete.name}`;
+        if (gameData.zoneWheels[zoneKey]) {
+          delete gameData.zoneWheels[zoneKey];
+        }
+        
+        // Remove zone from map
+        maps[mapIndex].zones.splice(zoneIndex, 1);
+        
+        // If this was the last zone in the map, don't allow deletion
+        if (maps[mapIndex].zones.length === 0) {
+          alert('¡No se puede eliminar la última zona de un mapa!');
+          return;
+        }
+        
+        gameData.customMaps = maps;
+        saveData();
+        showMaps(); // Refresh the view
+      }
+    }
+
+    function closeZoneModal() {
+      const modal = document.querySelector('.zone-modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    // Map management functions
+    function showAddMapModal() {
+      const modal = document.createElement('div');
+      modal.className = 'zone-modal';
+      modal.innerHTML = `
+        <div class="zone-modal-content">
+          <div class="zone-modal-inner">
+            <h3>Agregar Nuevo Mapa</h3>
+            <div class="zone-form">
+              <div class="form-group">
+                <label>Ícono de Mapa:</label>
+                <input type="text" id="mapIcon" placeholder="🗺️" maxlength="2">
+              </div>
+              <div class="form-group">
+                <label>Nombre de Mapa:</label>
+                <input type="text" id="mapName" placeholder="Ingresa nombre de mapa">
+              </div>
+              <div class="form-group">
+                <label>Descripción:</label>
+                <textarea id="mapDescription" placeholder="Ingresa descripción de mapa"></textarea>
+              </div>
+              <div class="form-actions">
+                <button onclick="addMap()" class="btn-primary">Agregar Mapa</button>
+                <button onclick="closeMapModal()" class="btn-secondary">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function showEditMapModal(mapIndex) {
+      const maps = getMapCategories();
+      const map = maps[mapIndex];
+      
+      const modal = document.createElement('div');
+      modal.className = 'zone-modal';
+      modal.innerHTML = `
+        <div class="zone-modal-content">
+          <div class="zone-modal-inner">
+            <h3>Editar Mapa</h3>
+            <div class="zone-form">
+              <div class="form-group">
+                <label>Ícono de Mapa:</label>
+                <input type="text" id="mapIcon" value="${map.icon}" maxlength="2">
+              </div>
+              <div class="form-group">
+                <label>Nombre de Mapa:</label>
+                <input type="text" id="mapName" value="${map.name}">
+              </div>
+              <div class="form-group">
+                <label>Descripción:</label>
+                <textarea id="mapDescription">${map.description}</textarea>
+              </div>
+              <div class="form-actions">
+                <button onclick="updateMap(${mapIndex})" class="btn-primary">Actualizar Mapa</button>
+                <button onclick="closeMapModal()" class="btn-secondary">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function addMap() {
+      const icon = document.getElementById('mapIcon').value.trim() || '🗺️';
+      const name = document.getElementById('mapName').value.trim();
+      const description = document.getElementById('mapDescription').value.trim();
+      
+      if (!name || !description) {
+        alert('Please fill in all fields');
+        return;
+      }
+      
+      const maps = getMapCategories();
+      
+      // Check if map name already exists
+      if (maps.some(m => m.name === name)) {
+        alert('A map with this name already exists!');
+        return;
+      }
+      
+      const newMap = {
+        name: name,
+        icon: icon,
+        description: description,
+        zones: [
+          {
+            map: name,
+            name: 'Central Area',
+            icon: '🏛️',
+            description: 'The main area of ' + name
+          }
+        ]
+      };
+      
+      maps.push(newMap);
+      gameData.customMaps = maps;
+      saveData();
+      closeMapModal();
+      showMaps(); // Refresh the view
+    }
+
+    function updateMap(mapIndex) {
+      const icon = document.getElementById('mapIcon').value.trim() || '🗺️';
+      const name = document.getElementById('mapName').value.trim();
+      const description = document.getElementById('mapDescription').value.trim();
+      
+      if (!name || !description) {
+        alert('Por favor llena todos los campos');
+        return;
+      }
+      
+      const maps = getMapCategories();
+      const oldMap = maps[mapIndex];
+      const oldMapName = oldMap.name;
+      
+      // Check if new name conflicts with existing maps (excluding current one)
+      if (maps.some((m, i) => m.name === name && i !== mapIndex)) {
+        alert('A map with this name already exists!');
+        return;
+      }
+      
+      // Update map properties
+      maps[mapIndex].name = name;
+      maps[mapIndex].icon = icon;
+      maps[mapIndex].description = description;
+      
+      // Update all zones in this map
+      maps[mapIndex].zones.forEach(zone => {
+        zone.map = name;
+      });
+      
+      // Update current map if it was the one being edited
+      if (gameData.currentMap === oldMapName) {
+        gameData.currentMap = name;
+      }
+      
+      // Update wheel data keys if map name changed
+      if (oldMapName !== name) {
+        const oldKeys = Object.keys(gameData.zoneWheels).filter(key => key.startsWith(oldMapName + '|'));
+        oldKeys.forEach(oldKey => {
+          const zoneName = oldKey.split('|')[1];
+          const newKey = `${name}|${zoneName}`;
+          gameData.zoneWheels[newKey] = gameData.zoneWheels[oldKey];
+          delete gameData.zoneWheels[oldKey];
+        });
+      }
+      
+      gameData.customMaps = maps;
+      saveData();
+      closeMapModal();
+      showMaps(); // Refresh the view
+    }
+
+    function deleteMap(mapIndex) {
+      const maps = getMapCategories();
+      const mapToDelete = maps[mapIndex];
+      
+      if (maps.length <= 1) {
+        alert('¡No se puede eliminar el último mapa! Agrega otro mapa primero.');
+        return;
+      }
+      
+      if (!confirm(`¿Estás seguro de que quieres eliminar "${mapToDelete.name}" y todas sus zonas? Esto también eliminará todos los datos de rueda asociados.`)) {
+        return;
+      }
+      
+      // Check if this is the currently selected map
+      if (gameData.currentMap === mapToDelete.name) {
+        // Switch to the first available map (that's not being deleted)
+        const remainingMaps = maps.filter((_, i) => i !== mapIndex);
+        const newMap = remainingMaps[0];
+        gameData.currentMap = newMap.name;
+        gameData.currentZone = newMap.zones[0].name;
+      }
+      
+      // Remove all wheel data for zones in this map
+      mapToDelete.zones.forEach(zone => {
+        const zoneKey = `${mapToDelete.name}|${zone.name}`;
+        if (gameData.zoneWheels[zoneKey]) {
+          delete gameData.zoneWheels[zoneKey];
+        }
+      });
+      
+      // Remove map from array
+      maps.splice(mapIndex, 1);
+      
+      gameData.customMaps = maps;
+      saveData();
+      showMaps(); // Refresh the view
+    }
+
+    function closeMapModal() {
+      const modal = document.querySelector('.zone-modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    // Update zones to latest version without affecting wheels
+    // Reset all wheels to default Pokemon
+    function resetAllWheelsToDefault() {
+      // Clear all custom wheel configurations
+      gameData.zoneWheels = {};
+      
+      // Force update zones to latest version
+      gameData.customMaps = [
+        {
+          name: 'Kanto',
+          icon: '🗾',
+          description: 'La región Pokemon original donde comienza tu aventura',
+          zones: [
+            { map: 'Kanto', name: 'Cerulean Cave', icon: '💜', description: 'Cueva misteriosa con Pokemon legendarios' },
+            { map: 'Kanto', name: 'Mt. Moon', icon: '🌙', description: 'Cueva antigua llena de Pokemon tipo Roca' },
+            { map: 'Kanto', name: 'Viridian Forest', icon: '🌳', description: 'Bosque denso con Pokemon tipo Bicho' },
+            { map: 'Kanto', name: 'Route 16', icon: '🚴', description: 'Ruta ciclista hacia Ciudad Fucsia' },
+            { map: 'Kanto', name: 'Route 21', icon: '🏄', description: 'Ruta marítima hacia Isla Canela' },
+            { map: 'Kanto', name: 'Route 20', icon: '🌊', description: 'Ruta oceánica entre islas' },
+            { map: 'Kanto', name: 'Route 19', icon: '🏖️', description: 'Ruta costera con Pokemon acuáticos' },
+            { map: 'Kanto', name: 'Seafoam Islands', icon: '🧊', description: 'Islas heladas con Pokemon de hielo' },
+            { map: 'Kanto', name: 'Safari Zone', icon: '🦏', description: 'Reserva natural con Pokemon raros' },
+            { map: 'Kanto', name: 'Route 14', icon: '🌾', description: 'Sendero herboso al oeste de Ciudad Fucsia' },
+            { map: 'Kanto', name: 'Route 13', icon: '🌊', description: 'Ruta costera con Pokemon tipo Agua' },
+            { map: 'Kanto', name: 'Route 12', icon: '🎣', description: 'Ruta de pesca al sur de Pueblo Lavanda' },
+            { map: 'Kanto', name: 'Route 8', icon: '🛤️', description: 'Entrada subterránea a Ciudad Azafrán' },
+            { map: 'Kanto', name: 'Route 7', icon: '🌸', description: 'Camino hacia Ciudad Azafrán desde el oeste' },
+            { map: 'Kanto', name: 'Route 5', icon: '🛤️', description: 'Ruta sur desde Celeste hasta Azafrán' },
+            { map: 'Kanto', name: 'Route 9', icon: '⛰️', description: 'Sendero montañoso hacia Rock Tunnel' },
+            { map: 'Kanto', name: 'Rock Tunnel', icon: '🕳️', description: 'Túnel oscuro lleno de Pokemon tipo Roca' },
+            { map: 'Kanto', name: 'Power Plant', icon: '⚡', description: 'Planta eléctrica con Pokemon tipo Eléctrico' },
+            { map: 'Kanto', name: 'Todo', icon: '🌟', description: 'Todos los 151 Pokemon de Kanto' },
+            { map: 'Kanto', name: 'Solo Rattata', icon: '🐭', description: 'Solo Rattata en todas partes' }
+          ]
+        }
+      ];
+      
+      // Initialize each zone with its specific Pokemon
+      gameData.customMaps[0].zones.forEach(zone => {
+        const zoneKey = `${zone.map}|${zone.name}`;
+        const zonePokemon = zoneSpecificPokemon[zone.name];
+        gameData.zoneWheels[zoneKey] = zonePokemon ? [...zonePokemon] : [...defaultWheelPrizes];
+      });
+      
+      // Save the updated data
+      saveData();
+      
+      // Show success message
+      alert('¡Todas las ruedas han sido reiniciadas con Pokemon específicos del entorno! Cada zona ahora tiene Pokemon que coinciden con su entorno (las cuevas tienen Pokemon Roca, las áreas de agua tienen Pokemon Agua, etc.)');
+      
+      // Refresh the current view
+      if (document.querySelector('.nav-item.active[onclick*="showWheel"]')) {
+        showWheel();
+      } else if (document.querySelector('.nav-item.active[onclick*="showMaps"]')) {
+        showMaps();
+      } else if (document.querySelector('.nav-item.active[onclick*="showBattle"]')) {
+        showBattle();
+      } else if (document.querySelector('.nav-item.active[onclick*="showItems"]')) {
+        showItems();
+      } else if (document.querySelector('.nav-item.active[onclick*="showEvents"]')) {
+        showEvents();
+      }
+    }
+
+    // History management
+    function clearHistory() {
+      if (confirm('¿Estás seguro de que quieres liberar todos los Pokemon de tu colección? Esta acción no se puede deshacer.')) {
+        gameData.prizes = [];
+        gameData.totalSpins = 0;
+        saveData();
+        showHistory(); // Refresh the history view
+      }
+    }
+
+    function playSpinSound() {
+      const totalPrizes = prizes.length;
+      const sliceAngle = 360 / totalPrizes;
+      
+      return `
+        <svg class="wheel-svg" viewBox="0 0 200 200" style="width: 100%; height: 100%;">
+          ${prizes.map((prize, index) => {
+            const startAngle = index * sliceAngle - 90; // Start from top (12 o'clock)
+            const endAngle = (index + 1) * sliceAngle - 90;
+            const startAngleRad = (startAngle * Math.PI) / 180;
+            const endAngleRad = (endAngle * Math.PI) / 180;
+            
+            const x1 = 100 + 80 * Math.cos(startAngleRad);
+            const y1 = 100 + 80 * Math.sin(startAngleRad);
+            const x2 = 100 + 80 * Math.cos(endAngleRad);
+            const y2 = 100 + 80 * Math.sin(endAngleRad);
+            
+            const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+            
+            // Alternate colors for better visibility
+            const colors = [
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(34, 197, 94, 0.8)',
+              'rgba(251, 191, 36, 0.8)',
+              'rgba(239, 68, 68, 0.8)',
+              'rgba(147, 51, 234, 0.8)',
+              'rgba(6, 182, 212, 0.8)',
+              'rgba(245, 101, 101, 0.8)',
+              'rgba(16, 185, 129, 0.8)'
+            ];
+            const fillColor = colors[index % colors.length];
+            
+            return `
+              <path d="M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z" 
+                    fill="${fillColor}" 
+                    stroke="rgba(255,255,255,0.3)" 
+                    stroke-width="1"/>
+            `;
+          }).join('')}
+          
+          ${prizes.map((prize, index) => {
+            const midAngle = (index * sliceAngle + sliceAngle / 2 - 90) * Math.PI / 180; // Align with slice position
+            const textRadius = 50;
+            const x = 100 + textRadius * Math.cos(midAngle);
+            const y = 100 + textRadius * Math.sin(midAngle);
+            
+            return `
+              <text x="${x}" y="${y}" 
+                    text-anchor="middle" 
+                    dominant-baseline="central"
+                    transform="rotate(${index * sliceAngle + sliceAngle / 2 - 90}, ${x}, ${y})"
+                    style="
+                      font-size: 10px;
+                      font-weight: bold;
+                      fill: white;
+                      text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                      font-family: Arial, sans-serif;
+                    ">
+                ${prize.name.length > 8 ? prize.name.substring(0, 8) + '...' : prize.name}
+              </text>
+            `;
+          }).join('')}
+          
+          <!-- Center circle -->
+          <circle cx="100" cy="100" r="25" fill="rgba(0,0,0,0.8)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+          <text x="100" y="100" text-anchor="middle" dominant-baseline="central" 
+                style="font-size: 8px; font-weight: bold; fill: white;">Preview</text>
+        </svg>
+        
+        <!-- Pointer -->
+        <div style="
+          position: absolute;
+          top: -5px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 15px solid #fbbf24;
+          z-index: 10;
+        "></div>
+      `;
+    }
+
+    // Prize editing functions
+    function updatePrizeField(index, field, value) {
+      const currentPrizes = getCurrentWheelPrizes();
+      if (currentPrizes[index]) {
+        currentPrizes[index][field] = value;
+        saveCurrentWheelPrizes(currentPrizes);
+        
+        // Update wheel preview
+        const previewContainer = document.getElementById('editWheelPreview');
+        if (previewContainer) {
+          previewContainer.innerHTML = renderEditWheelPreview(currentPrizes);
+        }
+      }
+    }
+
+    // Removed updatePrizePercentage function - no longer needed with equal chances
+
+    function addNewPrize() {
+      const currentPrizes = getCurrentWheelPrizes();
+      const newPrize = {
+        icon: '⚡',
+        name: 'New Pokemon',
+        value: 1,
+        type: 'pokemon'
+      };
+      
+      currentPrizes.push(newPrize);
+      saveCurrentWheelPrizes(currentPrizes);
+    }
+
+    function removePrize(index) {
+      const currentPrizes = getCurrentWheelPrizes();
+      if (currentPrizes.length > 1) { // Don't allow removing the last Pokemon
+        currentPrizes.splice(index, 1);
+        saveCurrentWheelPrizes(currentPrizes);
+      } else {
+        alert('¡No se puede eliminar el último Pokemon! Agrega otro Pokemon primero.');
+      }
+    }
+
+    function playSpinSound() {
+      // Create mechanical fortune wheel with continuous ticking
+      if (!window.AudioContext) return;
+      
+      const audioContext = new AudioContext();
+      const totalDuration = 3.5; // Match actual wheel animation duration
+      
+      // Create mechanical tick sounds using noise bursts instead of oscillators
+      let tickInterval = 0.05; // Start very fast (50ms apart)
+      let currentTime = 0;
+      
+      while (currentTime < totalDuration) {
+        // Create short noise burst for mechanical tick
+        const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.02, audioContext.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        
+        // Generate filtered white noise for mechanical sound
+        for (let i = 0; i < noiseData.length; i++) {
+          noiseData[i] = (Math.random() * 2 - 1) * 0.6;
+        }
+        
+        const noiseSource = audioContext.createBufferSource();
+        const noiseGain = audioContext.createGain();
+        const filter = audioContext.createBiquadFilter();
+        
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(audioContext.destination);
+        
+        // Filter to make it sound like plastic/wood hitting
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(800, audioContext.currentTime + currentTime);
+        filter.Q.setValueAtTime(5, audioContext.currentTime + currentTime);
+        
+        // Sharp attack, quick decay for mechanical click - increased volume
+        noiseGain.gain.setValueAtTime(0, audioContext.currentTime + currentTime);
+        noiseGain.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + currentTime + 0.002);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + currentTime + 0.02);
+        
+        noiseSource.start(audioContext.currentTime + currentTime);
+        
+        // Move to next tick
+        currentTime += tickInterval;
+        
+        // Gradually slow down the ticking using physics-based curve
+        const progress = currentTime / totalDuration;
+        const slowdownFactor = 1 + (progress * progress * 8); // Quadratic slowdown
+        tickInterval = 0.05 * slowdownFactor;
+        
+        // Don't exceed total duration
+        if (currentTime + tickInterval > totalDuration) break;
+      }
+    }
+
+    // Initialize app
+    loadData();
+    showWheel();
+  </script>
+</body>
+</html>
